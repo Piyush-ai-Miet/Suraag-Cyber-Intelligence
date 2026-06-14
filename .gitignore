@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Environment Variables
+.env
+
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+streamlit.log
+
+# Data files (optional - uncomment if you don't want to commit data)
+# data/*.csv
+
+# Temporary files
+*.tmp
+temp/
+tmp/
+
+# Backup files
+*_backup.py
+*.bak

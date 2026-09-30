@@ -533,45 +533,44 @@ with st.sidebar:
     
     st.markdown(logo_html, unsafe_allow_html=True)
 
-    # Navigation Menu (with Dashboard and History sections)
-    nav_html = """<div style="padding: 0.5rem;">
+    # Navigation Menu - 4 options
+    query_params = st.query_params
+    page_param = query_params.get("page", "multiple")
+    
+    is_multiple = "background: hsl(215, 28%, 17%); color: hsl(210, 40%, 98%);" if page_param == "multiple" else "background: transparent; color: hsl(215, 14%, 65%);"
+    is_ipdr = "background: hsl(215, 28%, 17%); color: hsl(210, 40%, 98%);" if page_param == "ipdr" else "background: transparent; color: hsl(215, 14%, 65%);"
+    is_cdr = "background: hsl(215, 28%, 17%); color: hsl(210, 40%, 98%);" if page_param == "cdr" else "background: transparent; color: hsl(215, 14%, 65%);"
+
+    nav_html = f"""<div style="padding: 0.5rem;">
 <div style="margin-bottom: 0.25rem;">
-<a href="#dashboard" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.375rem; background: hsl(215, 28%, 17%); color: hsl(210, 40%, 98%); text-decoration: none; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 500; font-size: 0.875rem; transition: all 0.2s ease;">
-<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-<polyline points="9 22 9 12 15 12 15 22"/>
-</svg>
-<span>Dashboard</span>
+<a href="?page=multiple" target="_self" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.375rem; {is_multiple} text-decoration: none; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 500; font-size: 0.875rem; transition: all 0.2s ease;">
+<span>📊</span>
+<span>Multiple IPDR Connection</span>
 </a>
 </div>
 <div style="margin-bottom: 0.25rem;">
-<a href="#history" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.375rem; background: transparent; color: hsl(215, 14%, 65%); text-decoration: none; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 500; font-size: 0.875rem; transition: all 0.2s ease;">
-<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-<circle cx="12" cy="12" r="10"/>
-<polyline points="12 6 12 12 16 14"/>
-</svg>
-<span>History</span>
+<a href="?page=ipdr" target="_blank" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.375rem; {is_ipdr} text-decoration: none; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 500; font-size: 0.875rem; transition: all 0.2s ease;">
+<span>🌐</span>
+<span>IPDR Analysis Tool</span>
+</a>
+</div>
+<div style="margin-bottom: 0.25rem;">
+<a href="?page=cdr" target="_blank" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.375rem; {is_cdr} text-decoration: none; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 500; font-size: 0.875rem; transition: all 0.2s ease;">
+<span>📱</span>
+<span>CDR Analysis Tool</span>
 </a>
 </div>
 </div>"""
     
     st.markdown(nav_html, unsafe_allow_html=True)
-    
-    # Old radio buttons (hidden but functional)
-    st.markdown(
-        """<style>
-        div[data-testid="stRadio"] {
-            display: none !important;
-        }
-        </style>""",
-        unsafe_allow_html=True,
-    )
-    
-    page = st.radio(
-        "Navigation",
-        ["📊 IPDR Forensic Analyzer", "🔗 Gang Correlation Analysis", "🌐 Web Analysis Tools"],
-        label_visibility="collapsed",
-    )
+
+    # Map query param to page name
+    page_map = {
+        "multiple": "📊 Multiple IPDR Connection",
+        "ipdr": "🌐 IPDR Analysis Tool",
+        "cdr": "📱 CDR Analysis Tool"
+    }
+    page = page_map.get(page_param, "📊 Multiple IPDR Connection")
 
     st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
     
@@ -604,8 +603,48 @@ Recent Reports
     
     st.markdown(empty_state_html, unsafe_allow_html=True)
     
-    st.markdown("<div style='height:40px'></div>", unsafe_allow_html=True)
-    st.markdown("<div style='height:32px'></div>", unsafe_allow_html=True)
+    # Set default API key globally behind the scenes
+    DEFAULT_API_KEY = "AQ.Ab8RN6Jz62xrnUISZ02gKoSlnJXWhvAJnO-5e1iLoz3-yQCP2Q"
+    if "gemini_api_key" not in st.session_state or not st.session_state["gemini_api_key"]:
+        st.session_state["gemini_api_key"] = DEFAULT_API_KEY
+
+    # Professional Developer Credits
+    credits_html = """
+    <div style="
+        text-align: center;
+        padding: 14px 12px;
+        margin: 8px 4px;
+        background: linear-gradient(135deg, rgba(0, 212, 255, 0.05) 0%, rgba(22, 27, 34, 0.6) 100%);
+        border: 1px solid rgba(0, 212, 255, 0.15);
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        font-family: 'Inter', sans-serif;
+    ">
+        <p style="
+            font-size: 0.65rem;
+            color: #8B949E;
+            margin: 0 0 6px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 700;
+        ">
+            DEVELOPED BY
+        </p>
+        <p style="
+            font-size: 0.85rem;
+            background: linear-gradient(90deg, #00D4FF 0%, #0077FF 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        ">
+            Piyush & Kush
+        </p>
+    </div>
+    """
+    st.markdown(credits_html, unsafe_allow_html=True)
+    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
     
     # Confidential Warning
     warning_html = f"""<div style="text-align:center; padding:16px; background:linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 127, 0.05)); border:2px solid #EF4444; border-radius:12px; backdrop-filter:blur(10px); box-shadow:0 0 30px rgba(239, 68, 68, 0.2)">
@@ -620,12 +659,47 @@ Recent Reports
 
 
 # ══════════════════════════════════════════════════════════
-# PAGE 1: IPDR ANALYZER
+# PAGE 1: MULTIPLE IPDR CONNECTION
 # ══════════════════════════════════════════════════════════
 
-if page == "📊 IPDR Forensic Analyzer":
+if page == "📊 Multiple IPDR Connection":
 
-    # Exact Dashboard from zip file
+    # Law Enforcement Notice
+    st.markdown(
+        """
+        <div style="
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 127, 0.08));
+            border: 2px solid #EF4444;
+            border-left: 4px solid #EF4444;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(10px);
+        ">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                <span style="font-size: 1.25rem;">⚠️</span>
+                <p style="
+                    color: #EF4444;
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    margin: 0;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+                ">RESTRICTED ACCESS — LAW ENFORCEMENT ONLY</p>
+            </div>
+            <p style="
+                color: hsl(215, 14%, 75%);
+                font-size: 0.6875rem;
+                margin: 0;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            ">Authorized personnel only. Unauthorized access is prohibited and punishable under IT Act 2000.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Dashboard Header
     st.markdown(
         """
         <h1 style="
@@ -633,14 +707,21 @@ if page == "📊 IPDR Forensic Analyzer":
             font-weight: 700;
             font-size: 1.875rem;
             color: #F0F6FC;
-            margin: 0 0 1.5rem 0;
+            margin: 0 0 0.5rem 0;
             line-height: 1.2;
-        ">Dashboard</h1>
+        ">Multiple IPDR Connection Analysis</h1>
+        <p style="
+            font-size: 0.875rem;
+            color: hsl(215, 14%, 65%);
+            margin: 0 0 1.5rem 0;
+            line-height: 1.5;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        ">Analyze and correlate multiple IPDR records simultaneously to detect coordinated criminal activity, shared infrastructure, and network patterns across suspects.</p>
         """,
         unsafe_allow_html=True,
     )
     
-    # New Analysis Card (exact from zip)
+    # New Analysis Card
     st.markdown(
         """
         <div style="
@@ -658,14 +739,14 @@ if page == "📊 IPDR Forensic Analyzer":
                     color: hsl(210, 40%, 98%);
                     margin: 0 0 0.375rem 0;
                     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-                ">New Analysis</h2>
+                ">Upload IPDR Files</h2>
                 <p style="
                     font-size: 0.875rem;
                     color: hsl(215, 14%, 65%);
                     margin: 0;
                     line-height: 1.5;
                     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-                ">Upload one or more IPDR log files to begin analysis and visualization. Multiple files will be automatically combined.</p>
+                ">Upload multiple IPDR CSV files to begin comprehensive analysis. All files will be automatically combined and analyzed for connections, patterns, and suspicious activities.</p>
             </div>
             <div style="padding: 1.5rem;">
         """,
@@ -682,13 +763,24 @@ if page == "📊 IPDR Forensic Analyzer":
         accept_multiple_files=True
     )
     
-    # Combine multiple files into one dataframe
+    # Combine multiple files into one dataframe with proper suspect labeling
     uploaded_file = None
+    suspect_files = []  # Store individual labeled dataframes
+    suspect_labels = []  # Store suspect names
+    
+    # Clear previous multi-file session state when new files are uploaded
+    if uploaded_files:
+        if 'is_multi_file' in st.session_state:
+            del st.session_state['is_multi_file']
+        if 'multi_file_df' in st.session_state:
+            del st.session_state['multi_file_df']
+    
     if uploaded_files:
         if len(uploaded_files) == 1:
+            # Single file - normal flow
             uploaded_file = uploaded_files[0]
         else:
-            # Multiple files - combine them
+            # Multiple files - PROPER GANG ANALYSIS with suspect labels
             st.markdown(
                 f"""<div style="background: hsl(158, 100%, 50%, 0.1); border: 1px solid hsl(158, 100%, 50%, 0.3); 
                 border-radius: 0.375rem; padding: 0.75rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
@@ -696,53 +788,90 @@ if page == "📊 IPDR Forensic Analyzer":
                 <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
                 <span style="color: hsl(158, 100%, 50%); font-size: 0.875rem; font-weight: 600; font-family: 'Inter', sans-serif;">
-                {len(uploaded_files)} files uploaded - Combining data...</span>
+                {len(uploaded_files)} files uploaded - Preparing gang analysis...</span>
                 </div>""",
                 unsafe_allow_html=True
             )
             
-            # Combine all CSV files
-            combined_dfs = []
+            # Process each file with suspect labeling
+            from modules.ipdr_analyzer import load_and_validate, add_uppercase_aliases
+            
             for idx, file in enumerate(uploaded_files):
                 try:
-                    df = pd.read_csv(file)
-                    combined_dfs.append(df)
+                    # Load and validate each file
+                    df_raw, error = load_and_validate(file.getvalue(), file.name)
+                    
+                    if error:
+                        st.error(f"❌ {file.name}: {error}")
+                        continue
+                    
+                    # Add uppercase aliases to individual file
+                    # This is needed because suspect_files list is used later in Multiple IPDR section
+                    df_raw = add_uppercase_aliases(df_raw)
+                    
+                    # Assign suspect label based on file name or auto-generate
+                    if len(uploaded_files) <= 26:
+                        suspect_label = f"Suspect_{chr(65+idx)}"  # A, B, C...
+                    else:
+                        suspect_label = f"Suspect_{idx+1}"
+                    
+                    # Clean filename for display
+                    display_name = file.name.replace('.csv', '')[:30]
+                    
+                    # Add suspect label column
+                    df_raw["_suspect_label"] = suspect_label
+                    df_raw["_file_name"] = display_name
+                    
+                    suspect_files.append(df_raw)
+                    suspect_labels.append(suspect_label)
+                    
                     st.markdown(
                         f"""<div style="color: hsl(215, 14%, 65%); font-size: 0.75rem; padding: 0.25rem 0; 
-                        font-family: 'Inter', sans-serif;">✓ {file.name} ({len(df)} rows)</div>""",
+                        font-family: 'Inter', sans-serif;">✓ {display_name} → {suspect_label} ({len(df_raw)} rows)</div>""",
                         unsafe_allow_html=True
                     )
                 except Exception as e:
                     st.error(f"Error reading {file.name}: {str(e)}")
             
-            if combined_dfs:
-                # Create a combined dataframe
-                combined_df = pd.concat(combined_dfs, ignore_index=True)
-                
-                # Store in session state to use later
-                if 'combined_ipdr_data' not in st.session_state:
-                    st.session_state.combined_ipdr_data = combined_df
-                else:
-                    st.session_state.combined_ipdr_data = combined_df
-                
-                st.markdown(
-                    f"""<div style="background: hsl(215, 48%, 10%); border: 1px solid hsl(158, 100%, 50%, 0.3); 
-                    border-radius: 0.375rem; padding: 0.75rem; margin-top: 0.5rem;">
-                    <span style="color: hsl(158, 100%, 50%); font-size: 0.875rem; font-weight: 700; font-family: 'Inter', sans-serif;">
-                    Combined Total: {len(combined_df)} rows</span>
-                    </div>""",
-                    unsafe_allow_html=True
-                )
-                
-                # Create a dummy uploaded_file object for compatibility
-                class DummyFile:
-                    def __init__(self, name, df):
-                        self.name = name
-                        self._df = df
-                    def getvalue(self):
-                        return self._df.to_csv(index=False).encode()
-                
-                uploaded_file = DummyFile(f"Combined_{len(uploaded_files)}_files.csv", combined_df)
+            if not suspect_files:
+                st.error("No valid files could be processed.")
+                st.stop()
+            
+            # Store for correlation analysis
+            if 'suspect_files_tuple' not in st.session_state:
+                st.session_state.suspect_files_tuple = tuple(suspect_files)
+                st.session_state.suspect_labels_tuple = tuple(suspect_labels)
+            else:
+                st.session_state.suspect_files_tuple = tuple(suspect_files)
+                st.session_state.suspect_labels_tuple = tuple(suspect_labels)
+            
+            # Create combined dataframe for display
+            # Note: Each suspect_file already has uppercase aliases, so concat will merge them properly
+            combined_df = pd.concat(suspect_files, ignore_index=True)
+            
+            # No need to call add_uppercase_aliases here since each file already has them
+            # This avoids potential duplicate column issues during concat
+            
+            st.markdown(
+                f"""<div style="background: hsl(215, 48%, 10%); border: 1px solid hsl(158, 100%, 50%, 0.3); 
+                border-radius: 0.375rem; padding: 0.75rem; margin-top: 0.5rem;">
+                <span style="color: hsl(158, 100%, 50%); font-size: 0.875rem; font-weight: 700; font-family: 'Inter', sans-serif;">
+                ✅ Ready for Gang Analysis: {len(suspect_files)} suspects, {len(combined_df)} total records</span>
+                </div>""",
+                unsafe_allow_html=True
+            )
+            
+            # Store the combined dataframe directly instead of wrapping in DummyFile
+            # This avoids re-parsing through load_and_validate which could cause duplicate column errors
+            st.session_state['multi_file_df'] = combined_df
+            st.session_state['is_multi_file'] = True
+            
+            # Create a dummy uploaded_file object for compatibility with downstream code
+            class DummyFile:
+                def __init__(self, name):
+                    self.name = name
+            
+            uploaded_file = DummyFile(f"Combined_{len(uploaded_files)}_suspects.csv")
     
     st.markdown("</div></div>", unsafe_allow_html=True)
 
@@ -903,7 +1032,11 @@ if page == "📊 IPDR Forensic Analyzer":
                     box-shadow: 0 0 20px hsl(158, 100%, 50%, 0.5), inset 0 0 8px hsl(158, 100%, 50%, 0.3);
                 ">
                     <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
                     </svg>
                 </div>
                 <h3 style="
@@ -912,29 +1045,28 @@ if page == "📊 IPDR Forensic Analyzer":
                     margin: 0 0 0.5rem 0;
                     color: hsl(210, 40%, 98%);
                     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-                ">3. Interactive Graph</h3>
+                ">3. Smart Insights</h3>
                 <p style="
                     color: hsl(215, 14%, 65%);
                     font-size: 0.875rem;
                     line-height: 1.5;
                     margin: 0;
                     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-                ">Explore your data in an interactive 2D/3D graph. Click to investigate findings.</p>
+                ">Query the Gemini-powered chatbot for forensic summaries and export PDF reports.</p>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        
-        st.markdown("</div></div>", unsafe_allow_html=True)
-
     else:
         from modules.ipdr_analyzer import (
             load_and_validate, compute_summary_stats,
             get_suspect_profiles, format_bytes, format_indian,
         )
+        from modules.correlation_engine import correlate_ipdrs
+        from modules.ai_multi_ipdr_analyzer import analyze_connections_with_ai, identify_unique_subscribers
         from modules.mitre_mapper import run_mitre_mapping, get_risk_color as mitre_risk_color, get_mitre_summary_text
         from modules.risk_scorer import compute_risk_scores, get_risk_color, get_overall_risk_score
-        from modules.traffic_patterns import build_hourly_timeline, build_heatmap, get_peak_hour_summary
+        from modules.traffic_patterns import build_subscriber_timeline
         from modules.geo_mapper import build_geo_map
         from modules.network_graph import build_network_graph, render_graph
         from modules.chatbot import render_chatbot
@@ -942,17 +1074,21 @@ if page == "📊 IPDR Forensic Analyzer":
 
         # Load and validate
         with st.spinner("📥 Loading and validating IPDR data..."):
-            df, error = load_and_validate(uploaded_file.getvalue(), uploaded_file.name)
+            # Check if this is a multi-file upload (dataframe already prepared)
+            if st.session_state.get('is_multi_file', False) and 'multi_file_df' in st.session_state:
+                df = st.session_state['multi_file_df']
+                error = ""
+            else:
+                # Single file - load and validate normally
+                df, error = load_and_validate(uploaded_file.getvalue(), uploaded_file.name)
+                # Add uppercase aliases for single file
+                if not error:
+                    from modules.ipdr_analyzer import add_uppercase_aliases
+                    df = add_uppercase_aliases(df)
 
         if error:
             st.error(f"❌ **File Error:** {error}")
             st.stop()
-
-        # Extract phone numbers from Subscriber_ID
-        df['Phone_Number'] = df['Subscriber_ID'].str.extract(r'(\d{10})$')[0]
-        
-        # Convert Timestamp to datetime
-        df['Timestamp'] = pd.to_datetime(df['Timestamp'])
         
         # Store original dataframe
         df_original = df.copy()
@@ -960,259 +1096,62 @@ if page == "📊 IPDR Forensic Analyzer":
         # ── ADVANCED SEARCH/FILTER SECTION ────────────────────
         section_header(
             "🔍 Advanced Search & Filters",
-            "Search and filter IPDR data by phone number, IP address, location, ports, date range, or suspect name",
+            "Filter IPDR data by Source/Destination IP, Protocol, Service Type, Destination Port, Bytes Transferred, and Date Range",
             "🔎"
         )
         
-        with st.expander("📱 Search & Filter Options", expanded=True):
+        with st.expander("🔎 Search & Filter Options", expanded=True):
             col1, col2, col3, col4 = st.columns(4)
             
             with col1:
-                st.markdown("**📞 Phone Number**")
-                phone_search = st.text_input(
-                    "Enter 10-digit number",
-                    placeholder="e.g., 9876543210",
-                    key="phone_search",
+                st.markdown("**🌐 Source IP Address**")
+                source_ip_search = st.text_input(
+                    "Enter Source IP",
+                    placeholder="e.g., 192.168.1.10",
+                    key="source_ip_search",
                     label_visibility="collapsed"
                 )
                 
-                st.markdown("**🌐 IP Address**")
-                ip_search = st.text_input(
-                    "Source or Destination IP",
-                    placeholder="e.g., 182.68.16.18",
-                    key="ip_search",
+                st.markdown("**🌐 Destination IP Address**")
+                dest_ip_search = st.text_input(
+                    "Enter Destination IP",
+                    placeholder="e.g., 8.8.8.8",
+                    key="dest_ip_search",
                     label_visibility="collapsed"
                 )
             
             with col2:
-                st.markdown("**🏙️ City Filter (Multi-Select)**")
-                
-                # Comprehensive list of Indian cities with states
-                all_indian_cities = {
-                    'Mumbai': 'Maharashtra',
-                    'Delhi': 'Delhi',
-                    'Bangalore': 'Karnataka',
-                    'Hyderabad': 'Telangana',
-                    'Ahmedabad': 'Gujarat',
-                    'Chennai': 'Tamil Nadu',
-                    'Kolkata': 'West Bengal',
-                    'Pune': 'Maharashtra',
-                    'Jaipur': 'Rajasthan',
-                    'Surat': 'Gujarat',
-                    'Lucknow': 'Uttar Pradesh',
-                    'Kanpur': 'Uttar Pradesh',
-                    'Nagpur': 'Maharashtra',
-                    'Indore': 'Madhya Pradesh',
-                    'Thane': 'Maharashtra',
-                    'Bhopal': 'Madhya Pradesh',
-                    'Visakhapatnam': 'Andhra Pradesh',
-                    'Pimpri-Chinchwad': 'Maharashtra',
-                    'Patna': 'Bihar',
-                    'Vadodara': 'Gujarat',
-                    'Ghaziabad': 'Uttar Pradesh',
-                    'Ludhiana': 'Punjab',
-                    'Agra': 'Uttar Pradesh',
-                    'Nashik': 'Maharashtra',
-                    'Faridabad': 'Haryana',
-                    'Meerut': 'Uttar Pradesh',
-                    'Rajkot': 'Gujarat',
-                    'Kalyan-Dombivali': 'Maharashtra',
-                    'Vasai-Virar': 'Maharashtra',
-                    'Varanasi': 'Uttar Pradesh',
-                    'Srinagar': 'Jammu and Kashmir',
-                    'Aurangabad': 'Maharashtra',
-                    'Dhanbad': 'Jharkhand',
-                    'Amritsar': 'Punjab',
-                    'Navi Mumbai': 'Maharashtra',
-                    'Allahabad': 'Uttar Pradesh',
-                    'Ranchi': 'Jharkhand',
-                    'Howrah': 'West Bengal',
-                    'Coimbatore': 'Tamil Nadu',
-                    'Jabalpur': 'Madhya Pradesh',
-                    'Gwalior': 'Madhya Pradesh',
-                    'Vijayawada': 'Andhra Pradesh',
-                    'Jodhpur': 'Rajasthan',
-                    'Madurai': 'Tamil Nadu',
-                    'Raipur': 'Chhattisgarh',
-                    'Kota': 'Rajasthan',
-                    'Chandigarh': 'Chandigarh',
-                    'Guwahati': 'Assam',
-                    'Solapur': 'Maharashtra',
-                    'Hubli-Dharwad': 'Karnataka',
-                    'Mysore': 'Karnataka',
-                    'Tiruchirappalli': 'Tamil Nadu',
-                    'Bareilly': 'Uttar Pradesh',
-                    'Aligarh': 'Uttar Pradesh',
-                    'Tiruppur': 'Tamil Nadu',
-                    'Moradabad': 'Uttar Pradesh',
-                    'Jalandhar': 'Punjab',
-                    'Bhubaneswar': 'Odisha',
-                    'Salem': 'Tamil Nadu',
-                    'Warangal': 'Telangana',
-                    'Mira-Bhayandar': 'Maharashtra',
-                    'Thiruvananthapuram': 'Kerala',
-                    'Bhiwandi': 'Maharashtra',
-                    'Saharanpur': 'Uttar Pradesh',
-                    'Guntur': 'Andhra Pradesh',
-                    'Amravati': 'Maharashtra',
-                    'Bikaner': 'Rajasthan',
-                    'Noida': 'Uttar Pradesh',
-                    'Jamshedpur': 'Jharkhand',
-                    'Bhilai': 'Chhattisgarh',
-                    'Cuttack': 'Odisha',
-                    'Firozabad': 'Uttar Pradesh',
-                    'Kochi': 'Kerala',
-                    'Nellore': 'Andhra Pradesh',
-                    'Bhavnagar': 'Gujarat',
-                    'Dehradun': 'Uttarakhand',
-                    'Durgapur': 'West Bengal',
-                    'Asansol': 'West Bengal',
-                    'Rourkela': 'Odisha',
-                    'Nanded': 'Maharashtra',
-                    'Kolhapur': 'Maharashtra',
-                    'Ajmer': 'Rajasthan',
-                    'Akola': 'Maharashtra',
-                    'Gulbarga': 'Karnataka',
-                    'Jamnagar': 'Gujarat',
-                    'Ujjain': 'Madhya Pradesh',
-                    'Loni': 'Uttar Pradesh',
-                    'Siliguri': 'West Bengal',
-                    'Jhansi': 'Uttar Pradesh',
-                    'Ulhasnagar': 'Maharashtra',
-                    'Jammu': 'Jammu and Kashmir',
-                    'Sangli-Miraj': 'Maharashtra',
-                    'Mangalore': 'Karnataka',
-                    'Erode': 'Tamil Nadu',
-                    'Belgaum': 'Karnataka',
-                    'Ambattur': 'Tamil Nadu',
-                    'Tirunelveli': 'Tamil Nadu',
-                    'Malegaon': 'Maharashtra',
-                    'Gaya': 'Bihar',
-                    'Jalgaon': 'Maharashtra',
-                    'Udaipur': 'Rajasthan',
-                    'Maheshtala': 'West Bengal',
-                }
-                
-                # Get cities available in IPDR data
-                cities_in_data = set(df['City'].unique().tolist())
-                states_in_data = set(df['State'].unique().tolist()) if 'State' in df.columns else set()
-                
-                # Create options: Available cities first (with state), then all other cities
-                available_options = []
-                other_options = []
-                
-                # Add available cities from data (prioritize)
-                for city in sorted(cities_in_data):
-                    if city and city != 'Unknown':
-                        state = all_indian_cities.get(city, 'Unknown State')
-                        if 'State' in df.columns:
-                            # Get state from data if available
-                            state_from_data = df[df['City'] == city]['State'].iloc[0] if len(df[df['City'] == city]) > 0 else state
-                            if state_from_data and state_from_data != 'Unknown':
-                                state = state_from_data
-                        available_options.append(f"✓ {city}, {state}")
-                
-                # Add all other major cities
-                for city, state in sorted(all_indian_cities.items()):
-                    if city not in cities_in_data:
-                        other_options.append(f"{city}, {state}")
-                
-                # Combine: available first, then divider, then others
-                all_options = available_options
-                if available_options and other_options:
-                    all_options.append("─" * 30)  # Divider
-                all_options.extend(other_options)
-                
-                selected_city_options = st.multiselect(
-                    "Select Cities",
-                    all_options,
-                    key="city_filter",
-                    label_visibility="collapsed",
-                    placeholder="All Cities"
-                )
-                
-                st.markdown("**� State Filter (Multi-Select)**")
-                
-                # Build state options with cities count
-                state_to_cities = {}
-                for city, state in all_indian_cities.items():
-                    if state not in state_to_cities:
-                        state_to_cities[state] = []
-                    state_to_cities[state].append(city)
-                
-                # Get available states from data
-                available_state_options = []
-                other_state_options = []
-                
-                for state in sorted(state_to_cities.keys()):
-                    cities_list = state_to_cities[state]
-                    cities_in_this_state = [c for c in cities_list if c in cities_in_data]
-                    
-                    if cities_in_this_state:
-                        # State has data - show at top with checkmark and cities
-                        cities_str = ', '.join(cities_in_this_state[:3])
-                        if len(cities_in_this_state) > 3:
-                            cities_str += f" +{len(cities_in_this_state)-3}"
-                        available_state_options.append(f"✓ {state} ({cities_str})")
-                    else:
-                        other_state_options.append(f"{state}")
-                
-                # Combine state options
-                all_state_options = available_state_options
-                if available_state_options and other_state_options:
-                    all_state_options.append("─" * 30)
-                all_state_options.extend(other_state_options)
-                
-                selected_state_options = st.multiselect(
-                    "Select States",
-                    all_state_options,
-                    key="state_filter",
-                    label_visibility="collapsed",
-                    placeholder="All States"
-                )
-            
-            with col3:
-                st.markdown("**� Suspect Name**")
-                all_names = ['All'] + sorted(df['Subscriber_Name'].unique().tolist())
-                name_filter = st.selectbox(
-                    "Select Name",
-                    all_names,
-                    key="name_filter",
+                st.markdown("**🔗 Protocol Filter**")
+                protocol_options = ['All', 'TCP', 'UDP', 'ICMP', 'HTTP', 'HTTPS']
+                protocol_filter = st.selectbox(
+                    "Select Protocol",
+                    protocol_options,
+                    key="protocol_filter",
                     label_visibility="collapsed"
                 )
                 
-                st.markdown("**�🔌 Port Filter (Multi-Select)**")
-                port_options = {
-                    'Tor SOCKS (9050)': 9050,
-                    'SSH (22)': 22,
-                    'Telnet (23)': 23,
-                    'SMTP (25)': 25,
-                    'DNS (53)': 53,
-                    'HTTP (80)': 80,
-                    'HTTPS (443)': 443,
-                    'SMB (445)': 445,
-                    'SOCKS Proxy (1080)': 1080,
-                    'MySQL (3306)': 3306,
-                    'RDP (3389)': 3389,
-                    'PostgreSQL (5432)': 5432,
-                    'VNC (5900)': 5900,
-                    'HTTP Alt (8080)': 8080,
-                    'HTTPS Alt (8443)': 8443,
-                    'Tor Dir (9030)': 9030,
-                    'Proxy (3128)': 3128,
-                    'FTP (21)': 21,
-                    'SFTP (22)': 22,
-                    'IMAP (143)': 143,
-                }
-                selected_ports = st.multiselect(
+                st.markdown("**⚙️ Service Type Filter**")
+                service_options = ['All', 'Web Browsing', 'HTTPS', 'VoIP', 'Email', 'FTP', 'SSH', 'DNS', 'Network Monitoring']
+                service_filter = st.selectbox(
+                    "Select Service",
+                    service_options,
+                    key="service_filter",
+                    label_visibility="collapsed"
+                )
+            
+            with col3:
+                st.markdown("**🔌 Destination Port Filter (Multi-Select)**")
+                unique_ports = sorted(df['Destination_Port'].dropna().unique().tolist())
+                unique_ports = [int(p) for p in unique_ports]
+                port_filter = st.multiselect(
                     "Select Ports",
-                    list(port_options.keys()),
+                    unique_ports,
                     key="port_filter",
                     label_visibility="collapsed",
                     placeholder="All Ports"
                 )
                 
-                st.markdown("**📊 Data Volume Filter**")
+                st.markdown("**📊 Bytes Transferred Filter**")
                 data_filter_options = ['All', 'High Volume (>100MB)', 'Very High (>500MB)', 'Low (<10MB)']
                 data_filter = st.selectbox(
                     "Filter by Data",
@@ -1254,59 +1193,39 @@ if page == "📊 IPDR Forensic Analyzer":
             df = df_original.copy()
             st.rerun()
         
-        if apply_filters or phone_search or ip_search:
+        if apply_filters or source_ip_search or dest_ip_search:
             df_filtered = df_original.copy()
             
-            # Phone number filter
-            if phone_search and phone_search.strip():
-                df_filtered = df_filtered[df_filtered['Phone_Number'].str.contains(phone_search.strip(), na=False)]
+            # Source IP filter
+            if source_ip_search and source_ip_search.strip():
+                df_filtered = df_filtered[df_filtered['Source_IP'].str.contains(source_ip_search.strip(), na=False)]
             
-            # IP address filter
-            if ip_search and ip_search.strip():
-                df_filtered = df_filtered[
-                    (df_filtered['Source_IP'].str.contains(ip_search.strip(), na=False)) |
-                    (df_filtered['Destination_IP'].str.contains(ip_search.strip(), na=False))
-                ]
+            # Destination IP filter
+            if dest_ip_search and dest_ip_search.strip():
+                df_filtered = df_filtered[df_filtered['Destination_IP'].str.contains(dest_ip_search.strip(), na=False)]
             
-            # City filter (multi-select with state)
-            if selected_city_options:
-                # Extract city names from "City, State" or "✓ City, State" format
-                selected_cities = []
-                for option in selected_city_options:
-                    if option.startswith("─"):  # Skip divider
-                        continue
-                    # Remove checkmark and extract city name
-                    city_part = option.replace("✓ ", "").split(",")[0].strip()
-                    selected_cities.append(city_part)
-                
-                if selected_cities:
-                    df_filtered = df_filtered[df_filtered['City'].isin(selected_cities)]
+            # Protocol Filter
+            if protocol_filter != 'All':
+                df_filtered = df_filtered[df_filtered['App_Protocol'].str.upper() == protocol_filter.upper()]
             
-            # State filter (multi-select)
-            if selected_state_options:
-                # Extract state names from options
-                selected_states = []
-                for option in selected_state_options:
-                    if option.startswith("─"):  # Skip divider
-                        continue
-                    # Remove checkmark and extract state name (before parenthesis)
-                    state_part = option.replace("✓ ", "").split("(")[0].strip()
-                    selected_states.append(state_part)
-                
-                if selected_states and 'State' in df_filtered.columns:
-                    df_filtered = df_filtered[df_filtered['State'].isin(selected_states)]
+            # Service Type Filter
+            if service_filter != 'All':
+                service_map = {
+                    'Web Browsing': ['HTTP', 'HTTPS'],
+                    'HTTPS': ['HTTPS'],
+                    'VoIP': ['SIP', 'RTP'],
+                    'Email': ['SMTP', 'IMAP', 'POP3'],
+                    'FTP': ['FTP'],
+                    'SSH': ['SSH'],
+                    'DNS': ['DNS'],
+                    'Network Monitoring': ['SNMP', 'ICMP']
+                }
+                if service_filter in service_map:
+                    df_filtered = df_filtered[df_filtered['App_Protocol'].str.upper().isin([p.upper() for p in service_map[service_filter]])]
             
-            # Name filter
-            if name_filter != 'All':
-                df_filtered = df_filtered[df_filtered['Subscriber_Name'] == name_filter]
-            
-            # Port filter (multi-select for both source and destination)
-            if selected_ports:
-                selected_port_nums = [port_options[p] for p in selected_ports]
-                df_filtered = df_filtered[
-                    (df_filtered['Source_Port'].isin(selected_port_nums)) |
-                    (df_filtered['Destination_Port'].isin(selected_port_nums))
-                ]
+            # Port filter (Destination Port)
+            if port_filter:
+                df_filtered = df_filtered[df_filtered['Destination_Port'].isin(port_filter)]
             
             # Data volume filter
             if data_filter == 'High Volume (>100MB)':
@@ -1359,9 +1278,9 @@ if page == "📊 IPDR Forensic Analyzer":
                 # Per-Suspect Detailed Analysis
                 for suspect_name in df['Subscriber_Name'].unique():
                     suspect_df = df[df['Subscriber_Name'] == suspect_name]
-                    phone_num = suspect_df['Phone_Number'].iloc[0] if 'Phone_Number' in suspect_df.columns else "N/A"
+                    subscriber_id = suspect_df['Subscriber_ID'].iloc[0] if 'Subscriber_ID' in suspect_df.columns else "N/A"
                     
-                    with st.expander(f"👤 **{suspect_name}** | 📱 {phone_num} | {len(suspect_df)} Sessions", expanded=False):
+                    with st.expander(f"👤 **{suspect_name}** | 🆔 {subscriber_id} | {len(suspect_df)} Sessions", expanded=False):
                         
                         # === RISK ASSESSMENT ===
                         tor_sessions = int(suspect_df['Is_TOR'].sum())
@@ -1421,9 +1340,12 @@ if page == "📊 IPDR Forensic Analyzer":
                         else:
                             risk_level = "🟢 LOW"
                             risk_color = "#3FB950"
+                        # Generate factors string
+                        risk_factors_str = ('<br/>• ' + '<br/>• '.join(risk_factors)) if risk_factors else '✓ No significant risk factors'
+                        risk_bg = f"linear-gradient(135deg, {risk_color}22, {risk_color}11)"
                         
-                        st.markdown(f"""
-                        <div style="background: linear-gradient(135deg, {risk_color}22, {risk_color}11); 
+                        risk_html = f"""
+                        <div style="background: {risk_bg}; 
                         border-left: 4px solid {risk_color}; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                             <span style="color: {risk_color}; font-size: 1rem; font-weight: 700; font-family: 'Inter', sans-serif;">
@@ -1432,10 +1354,11 @@ if page == "📊 IPDR Forensic Analyzer":
                         </div>
                         <div style="color: hsl(215, 14%, 65%); font-size: 0.75rem; font-family: 'Inter', sans-serif; line-height: 1.8;">
                         <strong style="color: hsl(210, 40%, 98%);">Detected Risk Factors:</strong><br/>
-                        {('<br/>• '.join(risk_factors)) if risk_factors else '✓ No significant risk factors'}
+                        {risk_factors_str}
                         </div>
                         </div>
-                        """, unsafe_allow_html=True)
+                        """
+                        st.markdown(risk_html, unsafe_allow_html=True)
                         
                         # === COMPACT IPDR FIELDS ===
                         st.markdown("#### 📋 Complete IPDR Data")
@@ -1597,12 +1520,95 @@ if page == "📊 IPDR Forensic Analyzer":
         # Compute all analyses
         with st.spinner("🔬 Running forensic analysis..."):
             stats       = compute_summary_stats(df)
-            risk_scores = compute_risk_scores(df)
+            
+            # OVERRIDE suspect count for single file case
+            # 1 File = 1 Suspect (regardless of Subscriber_Name in data)
+            if len(suspect_files) < 2:
+                stats['unique_subscribers'] = 1
+            else:
+                # Multiple files - count based on number of files uploaded
+                stats['unique_subscribers'] = len(suspect_files)
+            
             mitre_df    = run_mitre_mapping(df)
-            profiles    = get_suspect_profiles(df)
+            
+            # For single file, treat entire dataset as ONE suspect
+            if len(suspect_files) >= 2:
+                # Multiple files - compute per Subscriber_Name
+                risk_scores = compute_risk_scores(df)
+                profiles    = get_suspect_profiles(df)
+            else:
+                # Single file - treat all as ONE suspect
+                # Temporarily set all Subscriber_Name to file name for risk calculation
+                df_temp = df.copy()
+                df_temp['Subscriber_Name'] = uploaded_file.name.replace('.csv', '')
+                df_temp['Subscriber_ID'] = 'SINGLE_SUBJECT'
+                risk_scores = compute_risk_scores(df_temp)
+                profiles    = get_suspect_profiles(df_temp)
+            
             overall_risk = get_overall_risk_score(risk_scores)
-
-        st.success(f"✅ Analysis complete — {format_indian(stats['total_sessions'])} sessions loaded from **{uploaded_file.name}**")
+            
+            # Detect investigation mode based on NUMBER OF FILES, not subscribers in file
+            if len(suspect_files) >= 2:
+                # Multiple files uploaded - Multi-Subject Investigation
+                investigation_info = {
+                    "mode": "MULTI_SUBJECT",
+                    "description": "Multi Subject Correlation",
+                    "unique_count": len(suspect_files),
+                    "identifier_type": "Files Uploaded",
+                    "subscriber_list": suspect_labels,
+                    "focus_areas": [
+                        "Common Destinations",
+                        "Shared Infrastructure",
+                        "Coordinated Activity",
+                        "Network Clusters",
+                        "Temporal Correlation",
+                        "Central Nodes",
+                        "Hidden Relationships"
+                    ]
+                }
+            else:
+                # Single file - Single Subject Investigation
+                investigation_info = {
+                    "mode": "SINGLE_SUBJECT",
+                    "description": "Single Subject Investigation",
+                    "unique_count": 1,
+                    "identifier_type": "File",
+                    "subscriber_list": [uploaded_file.name],
+                    "focus_areas": [
+                        "Timeline Analysis",
+                        "Destination Patterns",
+                        "VPN/TOR Usage",
+                        "Suspicious Infrastructure",
+                        "Behavioral Anomalies"
+                    ]
+                }
+            
+            # Note: Gang analysis will run in the display section below
+            # using the new multi_ipdr_analyzer module
+            
+            overall_risk = get_overall_risk_score(risk_scores)
+        
+        st.success(f"✅ Analysis complete — {format_indian(stats['total_sessions'])} sessions | **{investigation_info['description']}** ({investigation_info['unique_count']} entities)")
+        
+        # === INVESTIGATION MODE BANNER ===
+        mode_color = "#FF8C00" if investigation_info['mode'] == "MULTI_SUBJECT" else "#3FB950"
+        mode_icon = "👥" if investigation_info['mode'] == "MULTI_SUBJECT" else "👤"
+        
+        st.markdown(
+            f"""<div style="background: linear-gradient(135deg, {mode_color}22, {mode_color}11); 
+            border-left: 4px solid {mode_color}; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <span style="font-size: 1.5rem;">{mode_icon}</span>
+                <span style="color: {mode_color}; font-size: 1rem; font-weight: 700; font-family: 'Inter', sans-serif;">
+                {investigation_info['description'].upper()}</span>
+            </div>
+            <div style="color: hsl(215, 14%, 65%); font-size: 0.75rem; font-family: 'Inter', sans-serif;">
+                <strong>Entities Detected:</strong> {investigation_info['unique_count']} ({investigation_info['identifier_type']})<br>
+                <strong>Focus Areas:</strong> {', '.join(investigation_info['focus_areas'][:5])}
+            </div>
+            </div>""",
+            unsafe_allow_html=True
+        )
 
         # ── 4 METRIC CARDS (Enhanced Professional Design) ────
         st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
@@ -1673,18 +1679,28 @@ if page == "📊 IPDR Forensic Analyzer":
 
         st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
-        # Enhanced Quick Stats Card
+        # Enhanced Quick Stats Card (matching IPDR HTML tool logic)
         st.markdown(
             f"""<div style="background:linear-gradient(135deg, {COLOR_CARD}, #0A0E12);
             border:1px solid {COLOR_BORDER};border-radius:12px;padding:20px 24px;
             box-shadow:0 4px 16px {COLOR_BG}cc">
             <p style="color:{COLOR_ACCENT};font-size:11px;font-weight:700;margin:0 0 12px 0;
             text-transform:uppercase;letter-spacing:1px">📈 Quick Statistics</p>
-            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:20px">
+            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:16px">
+                <div style="text-align:center">
+                    <p style="color:{COLOR_ACCENT};font-size:24px;font-weight:700;margin:0">
+                    {format_indian(stats['total_sessions'])}</p>
+                    <p style="color:{COLOR_MUTED};font-size:10px;margin:4px 0 0 0">📊 Total Sessions</p>
+                </div>
+                <div style="text-align:center">
+                    <p style="color:#FF8C00;font-size:24px;font-weight:700;margin:0">
+                    {format_indian(stats['unique_ips'])}</p>
+                    <p style="color:{COLOR_MUTED};font-size:10px;margin:4px 0 0 0">🌐 Unique IPs</p>
+                </div>
                 <div style="text-align:center">
                     <p style="color:{COLOR_CRITICAL};font-size:24px;font-weight:700;margin:0">
                     {format_indian(stats['tor_sessions'])}</p>
-                    <p style="color:{COLOR_MUTED};font-size:10px;margin:4px 0 0 0">🔴 TOR Sessions</p>
+                    <p style="color:{COLOR_MUTED};font-size:10px;margin:4px 0 0 0">🔴 Tor Sessions</p>
                 </div>
                 <div style="text-align:center">
                     <p style="color:{COLOR_HIGH};font-size:24px;font-weight:700;margin:0">
@@ -1701,15 +1717,152 @@ if page == "📊 IPDR Forensic Analyzer":
                     {format_bytes(stats['total_bytes'])}</p>
                     <p style="color:{COLOR_MUTED};font-size:10px;margin:4px 0 0 0">📦 Data Volume</p>
                 </div>
-                <div style="text-align:center">
-                    <p style="color:{COLOR_TEXT};font-size:24px;font-weight:700;margin:0">
-                    {stats['unique_subscribers']}</p>
-                    <p style="color:{COLOR_MUTED};font-size:10px;margin:4px 0 0 0">👤 Suspects</p>
-                </div>
             </div>
             </div>""",
             unsafe_allow_html=True,
         )
+
+        # ══════════════════════════════════════════════════════════
+        # MULTIPLE IPDR CONNECTION ANALYSIS (Only for 2+ files)
+        # ══════════════════════════════════════════════════════════
+        if len(suspect_files) >= 2:
+            st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+            
+            section_header(
+                "🔗 Multiple IPDR Connection Analysis",
+                f"Analyzing {len(suspect_files)} suspects to detect shared connections and coordinated activity",
+                "👥"
+            )
+            
+            plain_english_box(
+                f"📁 <b>{len(suspect_files)} IPDR files uploaded.</b> Each file represents ONE suspect's internet activity. "
+                "The system will check if these suspects contacted the <b>same destination IPs</b> - "
+                "this is PRIMARY evidence of gang connection or coordinated criminal activity.",
+                icon="ℹ️"
+            )
+            
+            # === PER-SUSPECT SUMMARY ===
+            st.markdown("### 👥 Suspect Overview")
+            
+            cols = st.columns(min(len(suspect_files), 4))
+            for idx, label in enumerate(suspect_labels):
+                suspect_df = suspect_files[idx]
+                file_name = suspect_df['_file_name'].iloc[0] if '_file_name' in suspect_df.columns else label
+                
+                with cols[idx % 4]:
+                    total_sessions = len(suspect_df)
+                    unique_ips = suspect_df['Destination_IP'].nunique()
+                    tor_count = int(suspect_df['Is_TOR'].sum()) if 'Is_TOR' in suspect_df.columns else 0
+                    
+                    st.markdown(
+                        f"""<div style="background:{COLOR_CARD};border:1px solid {COLOR_BORDER};
+                        border-radius:8px;padding:16px;text-align:center">
+                        <p style="color:{COLOR_ACCENT};font-size:16px;font-weight:700;margin:0 0 8px 0">{label}</p>
+                        <p style="color:{COLOR_MUTED};font-size:10px;margin:0">{file_name}</p>
+                        <hr style="margin:8px 0;opacity:0.3">
+                        <p style="color:{COLOR_TEXT};font-size:24px;font-weight:700;margin:4px 0">{format_indian(total_sessions)}</p>
+                        <p style="color:{COLOR_MUTED};font-size:10px;margin:0">Sessions</p>
+                        <p style="color:{COLOR_TEXT};font-size:18px;font-weight:600;margin:8px 0">{format_indian(unique_ips)}</p>
+                        <p style="color:{COLOR_MUTED};font-size:10px;margin:0">Unique IPs</p>
+                        {f'<p style="color:{COLOR_CRITICAL};font-size:14px;font-weight:600;margin:8px 0">🔴 {tor_count} Tor</p>' if tor_count > 0 else ''}
+                        </div>""",
+                        unsafe_allow_html=True
+                    )
+            
+            st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+            
+            # === SHARED IPs ANALYSIS (PRIMARY EVIDENCE) ===
+            st.markdown("### 🌐 Shared Destination IPs - PRIMARY EVIDENCE")
+            
+            # Find shared IPs
+            suspect_ip_map = {}
+            for idx, label in enumerate(suspect_labels):
+                suspect_df = suspect_files[idx]
+                if 'Destination_IP' in suspect_df.columns:
+                    suspect_ip_map[label] = set(suspect_df['Destination_IP'].dropna().unique())
+            
+            # Find IPs contacted by 2+ suspects
+            all_ips = set()
+            for ips in suspect_ip_map.values():
+                all_ips.update(ips)
+            
+            shared_ip_data = []
+            for ip in all_ips:
+                suspects_with_ip = [label for label, ips in suspect_ip_map.items() if ip in ips]
+                if len(suspects_with_ip) >= 2:
+                    # Get details
+                    total_sessions = 0
+                    is_tor = False
+                    is_foreign = False
+                    
+                    for idx, label in enumerate(suspect_labels):
+                        if label in suspects_with_ip:
+                            suspect_df = suspect_files[idx]
+                            ip_sessions = suspect_df[suspect_df['Destination_IP'] == ip]
+                            total_sessions += len(ip_sessions)
+                            if 'Is_TOR' in suspect_df.columns:
+                                is_tor = is_tor or ip_sessions['Is_TOR'].any()
+                            if 'Is_Foreign_IP' in suspect_df.columns:
+                                is_foreign = is_foreign or ip_sessions['Is_Foreign_IP'].any()
+                    
+                    shared_ip_data.append({
+                        'IP Address': ip,
+                        'Contacted By': ', '.join(suspects_with_ip),
+                        '# Suspects': len(suspects_with_ip),
+                        'Total Sessions': total_sessions,
+                        'Type': '🔴 TOR' if is_tor else ('🌍 FOREIGN' if is_foreign else '🔵 NORMAL')
+                    })
+            
+            if shared_ip_data:
+                shared_df = pd.DataFrame(shared_ip_data).sort_values('# Suspects', ascending=False)
+                
+                # Connection verdict
+                critical_count = len([x for x in shared_ip_data if x['Type'] == '🔴 TOR'])
+                
+                if len(shared_ip_data) >= 10 or critical_count >= 3:
+                    verdict = "🔴 STRONG CONNECTION DETECTED"
+                    verdict_color = COLOR_CRITICAL
+                    verdict_msg = f"Suspects shared {len(shared_ip_data)} destination IPs. This indicates organized criminal activity."
+                elif len(shared_ip_data) >= 5:
+                    verdict = "🟠 PROBABLE CONNECTION"
+                    verdict_color = COLOR_HIGH
+                    verdict_msg = f"Suspects shared {len(shared_ip_data)} IPs. Significant evidence of coordination."
+                elif len(shared_ip_data) >= 2:
+                    verdict = "🟡 POSSIBLE CONNECTION"
+                    verdict_color = "#FFD700"
+                    verdict_msg = f"Suspects shared {len(shared_ip_data)} IPs. Minor overlaps detected."
+                else:
+                    verdict = "🟢 WEAK CONNECTION"
+                    verdict_color = "#3FB950"
+                    verdict_msg = f"Only {len(shared_ip_data)} shared IP. May be coincidental."
+                
+                st.markdown(
+                    f"""<div style="background:{verdict_color}11;border-left:4px solid {verdict_color};
+                    border-radius:8px;padding:16px;margin:16px 0">
+                    <p style="color:{verdict_color};font-size:18px;font-weight:800;margin:0 0 8px 0">
+                    {verdict}</p>
+                    <p style="color:{COLOR_TEXT};font-size:13px;margin:0">{verdict_msg}</p>
+                    </div>""",
+                    unsafe_allow_html=True
+                )
+                
+                st.dataframe(
+                    shared_df,
+                    use_container_width=True,
+                    hide_index=True
+                )
+                
+                if critical_count > 0:
+                    st.error(f"⚠️ {critical_count} shared IPs are Tor/Proxy nodes - CRITICAL evidence of anonymization!")
+                
+            else:
+                st.success("✅ No shared destination IPs found. Suspects appear to be independent.")
+            
+            st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+
+        # ══════════════════════════════════════════════════════════
+        # GO STRAIGHT TO MITRE - Skip all single subject sections
+        # ══════════════════════════════════════════════════════════
 
         # ── MITRE ATT&CK TABLE ────────────────────────────
         section_header(
@@ -1764,57 +1917,6 @@ if page == "📊 IPDR Forensic Analyzer":
 
             plain_english_box(get_mitre_summary_text(mitre_df), icon="⚠️")
 
-        # ── RISK SCORING ──────────────────────────────────
-        section_header(
-            "Suspect Risk Scores",
-            "Each suspect is scored 0–100 based on how suspicious their internet activity is",
-            "🔴"
-        )
-        plain_english_box(
-            "A risk score of 0 means the person appears innocent. A score of 80 or above means there is "
-            "strong evidence of criminal activity. Below, each suspect's score is shown with the top reasons "
-            "in simple language.",
-            icon="📊",
-        )
-
-        for _, row in risk_scores.iterrows():
-            risk_c = get_risk_color(row["Risk_Score"])
-            with st.expander(
-                f"{'🔴' if row['Risk_Score']>=80 else '🟠' if row['Risk_Score']>=60 else '🟡' if row['Risk_Score']>=40 else '🟢'} "
-                f"{row['Subscriber_Name']} — Score: {row['Risk_Score']}/100 [{row['Risk_Level']}]",
-                expanded=row["Risk_Score"] >= 60,
-            ):
-                col_a, col_b = st.columns([2, 1])
-                with col_a:
-                    st.markdown(
-                        f"<p style='color:{COLOR_MUTED};font-size:12px;margin:0'>Subscriber ID</p>"
-                        f"<p style='color:{COLOR_TEXT};font-size:14px;font-weight:600;margin:0 0 12px 0'>{row['Subscriber_ID']}</p>",
-                        unsafe_allow_html=True,
-                    )
-                    st.markdown("<p style='color:#8B949E;font-size:12px;font-weight:600;text-transform:uppercase'>Top Risk Reasons:</p>", unsafe_allow_html=True)
-                    for reason in row.get("Top_Reasons", []):
-                        st.markdown(f"<p style='color:{COLOR_TEXT};font-size:13px;margin:4px 0'>▸ {reason}</p>", unsafe_allow_html=True)
-
-                with col_b:
-                    st.markdown(
-                        f"""<div style="text-align:center;background:{risk_c}11;
-                        border:2px solid {risk_c}44;border-radius:12px;padding:16px">
-                        <p style="color:{COLOR_MUTED};font-size:11px;margin:0;text-transform:uppercase">Risk Score</p>
-                        <p style="color:{risk_c};font-size:40px;font-weight:700;margin:4px 0;line-height:1">{row['Risk_Score']}</p>
-                        <p style="color:{risk_c};font-size:13px;font-weight:700;margin:0">{row['Risk_Level']}</p>
-                        </div>""",
-                        unsafe_allow_html=True,
-                    )
-                    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-                    st.markdown(
-                        f"<p style='color:{COLOR_MUTED};font-size:11px;margin:2px 0'>Sessions: <b style='color:{COLOR_TEXT}'>{format_indian(row['Total_Sessions'])}</b></p>"
-                        f"<p style='color:{COLOR_MUTED};font-size:11px;margin:2px 0'>Data: <b style='color:{COLOR_TEXT}'>{format_bytes(row['Total_Bytes'])}</b></p>"
-                        f"<p style='color:{COLOR_MUTED};font-size:11px;margin:2px 0'>Tor: <b style='color:{COLOR_CRITICAL}'>{row['TOR_Sessions']}</b> sessions</p>"
-                        f"<p style='color:{COLOR_MUTED};font-size:11px;margin:2px 0'>Foreign: <b style='color:{COLOR_HIGH}'>{row['Foreign_Sessions']}</b> sessions</p>"
-                        f"<p style='color:{COLOR_MUTED};font-size:11px;margin:2px 0'>Off-Hours: <b style='color:#FFD700'>{row['Off_Hours_Sessions']}</b> sessions</p>",
-                        unsafe_allow_html=True,
-                    )
-
         # ── GEO MAP ───────────────────────────────────────
         section_header(
             "Geolocation Intelligence Map",
@@ -1832,152 +1934,246 @@ if page == "📊 IPDR Forensic Analyzer":
             icon="🗺️",
         )
 
-        with st.spinner("📍 Geolocating IP addresses (this may take a moment for large files)..."):
-            try:
-                geo_map, geo_summary = build_geo_map(df)
-                
-                # Enhanced geo metrics
-                col_g1, col_g2, col_g3, col_g4 = st.columns(4)
-                with col_g1:
-                    st.markdown(
-                        f"""<div style="background:linear-gradient(135deg,{COLOR_CARD},#0A0E12);
-                        border:1px solid #3388ff44;border-left:3px solid #3388ff;
-                        border-radius:12px;padding:14px;text-align:center;
-                        animation:fadeInUp 0.4s ease-out both">
-                        <p style="color:{COLOR_MUTED};font-size:10px;font-weight:600;margin:0;
-                        text-transform:uppercase;letter-spacing:0.8px">🔵 Indian IPs</p>
-                        <p style="color:#3388ff;font-size:26px;font-weight:800;margin:6px 0 0 0">{geo_summary['indian']}</p></div>""",
-                        unsafe_allow_html=True,
-                    )
-                with col_g2:
-                    st.markdown(
-                        f"""<div style="background:linear-gradient(135deg,{COLOR_CARD},#0A0E12);
-                        border:1px solid {COLOR_CRITICAL}44;border-left:3px solid {COLOR_CRITICAL};
-                        border-radius:12px;padding:14px;text-align:center;
-                        animation:fadeInUp 0.5s ease-out both">
-                        <p style="color:{COLOR_MUTED};font-size:10px;font-weight:600;margin:0;
-                        text-transform:uppercase;letter-spacing:0.8px">🔴 Foreign IPs</p>
-                        <p style="color:{COLOR_CRITICAL};font-size:26px;font-weight:800;margin:6px 0 0 0">{geo_summary['foreign']}</p></div>""",
-                        unsafe_allow_html=True,
-                    )
-                with col_g3:
-                    st.markdown(
-                        f"""<div style="background:linear-gradient(135deg,{COLOR_CARD},#0A0E12);
-                        border:1px solid #FF8C0044;border-left:3px solid #FF8C00;
-                        border-radius:12px;padding:14px;text-align:center;
-                        animation:fadeInUp 0.6s ease-out both">
-                        <p style="color:{COLOR_MUTED};font-size:10px;font-weight:600;margin:0;
-                        text-transform:uppercase;letter-spacing:0.8px">🟠 Tor/Proxy</p>
-                        <p style="color:#FF8C00;font-size:26px;font-weight:800;margin:6px 0 0 0">{geo_summary['tor']}</p></div>""",
-                        unsafe_allow_html=True,
-                    )
-                with col_g4:
-                    st.markdown(
-                        f"""<div style="background:linear-gradient(135deg,{COLOR_CARD},#0A0E12);
-                        border:1px solid {COLOR_ACCENT}44;border-left:3px solid {COLOR_ACCENT};
-                        border-radius:12px;padding:14px;text-align:center;
-                        animation:fadeInUp 0.7s ease-out both">
-                        <p style="color:{COLOR_MUTED};font-size:10px;font-weight:600;margin:0;
-                        text-transform:uppercase;letter-spacing:0.8px">📍 Total IPs</p>
-                        <p style="color:{COLOR_ACCENT};font-size:26px;font-weight:800;margin:6px 0 0 0">{geo_summary['total']}</p></div>""",
-                        unsafe_allow_html=True,
-                    )
+        # Initialize session state for map loading
+        if "geo_map_loaded" not in st.session_state:
+            st.session_state["geo_map_loaded"] = False
 
-                from streamlit_folium import folium_static
-                folium_static(geo_map, width=None, height=600)
-            except Exception as e:
-                st.warning(f"⚠️ Map could not be rendered: {e}. Check your internet connection for IP geolocation.")
+        # Show button to load map
+        if not st.session_state["geo_map_loaded"]:
+            col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 1])
+            with col_btn2:
+                if st.button("🗺️ Generate Geolocation Map", width="stretch", type="primary"):
+                    st.session_state["geo_map_loaded"] = True
+                    st.rerun()
+        
+        # Load map only after button is clicked
+        if st.session_state["geo_map_loaded"]:
+            with st.spinner("📍 Geolocating IP addresses..."):
+                try:
+                    geo_map, geo_summary = build_geo_map(df)
+                    
+                    # Enhanced geo metrics
+                    col_g1, col_g2, col_g3, col_g4 = st.columns(4)
+                    with col_g1:
+                        st.markdown(
+                            f"""<div style="background:linear-gradient(135deg,{COLOR_CARD},#0A0E12);
+                            border:1px solid #3388ff44;border-left:3px solid #3388ff;
+                            border-radius:12px;padding:14px;text-align:center;
+                            animation:fadeInUp 0.4s ease-out both">
+                            <p style="color:{COLOR_MUTED};font-size:10px;font-weight:600;margin:0;
+                            text-transform:uppercase;letter-spacing:0.8px">🔵 Indian IPs</p>
+                            <p style="color:#3388ff;font-size:26px;font-weight:800;margin:6px 0 0 0">{geo_summary['indian']}</p></div>""",
+                            unsafe_allow_html=True,
+                        )
+                    with col_g2:
+                        st.markdown(
+                            f"""<div style="background:linear-gradient(135deg,{COLOR_CARD},#0A0E12);
+                            border:1px solid {COLOR_CRITICAL}44;border-left:3px solid {COLOR_CRITICAL};
+                            border-radius:12px;padding:14px;text-align:center;
+                            animation:fadeInUp 0.5s ease-out both">
+                            <p style="color:{COLOR_MUTED};font-size:10px;font-weight:600;margin:0;
+                            text-transform:uppercase;letter-spacing:0.8px">🔴 Foreign IPs</p>
+                            <p style="color:{COLOR_CRITICAL};font-size:26px;font-weight:800;margin:6px 0 0 0">{geo_summary['foreign']}</p></div>""",
+                            unsafe_allow_html=True,
+                        )
+                    with col_g3:
+                        st.markdown(
+                            f"""<div style="background:linear-gradient(135deg,{COLOR_CARD},#0A0E12);
+                            border:1px solid #FF8C0044;border-left:3px solid #FF8C00;
+                            border-radius:12px;padding:14px;text-align:center;
+                            animation:fadeInUp 0.6s ease-out both">
+                            <p style="color:{COLOR_MUTED};font-size:10px;font-weight:600;margin:0;
+                            text-transform:uppercase;letter-spacing:0.8px">🟠 Tor/Proxy</p>
+                            <p style="color:#FF8C00;font-size:26px;font-weight:800;margin:6px 0 0 0">{geo_summary['tor']}</p></div>""",
+                            unsafe_allow_html=True,
+                        )
+                    with col_g4:
+                        st.markdown(
+                            f"""<div style="background:linear-gradient(135deg,{COLOR_CARD},#0A0E12);
+                            border:1px solid {COLOR_ACCENT}44;border-left:3px solid {COLOR_ACCENT};
+                            border-radius:12px;padding:14px;text-align:center;
+                            animation:fadeInUp 0.7s ease-out both">
+                            <p style="color:{COLOR_MUTED};font-size:10px;font-weight:600;margin:0;
+                            text-transform:uppercase;letter-spacing:0.8px">📍 Total IPs</p>
+                            <p style="color:{COLOR_ACCENT};font-size:26px;font-weight:800;margin:6px 0 0 0">{geo_summary['total']}</p></div>""",
+                            unsafe_allow_html=True,
+                        )
+
+                    from streamlit_folium import folium_static
+                    folium_static(geo_map, width=None, height=600)
+                    
+                    # Success message after map is rendered
+                    st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+                    col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
+                    with col_btn2:
+                        st.markdown(
+                            f"""<div style="background:linear-gradient(135deg, rgba(0, 255, 148, 0.1), rgba(0, 212, 255, 0.05));
+                            border:1px solid {COLOR_ACCENT}44;border-radius:12px;padding:16px;text-align:center;
+                            animation:fadeInUp 0.8s ease-out both;box-shadow:0 4px 20px rgba(0,255,148,0.15)">
+                            <p style="color:{COLOR_ACCENT};font-size:14px;font-weight:700;margin:0;
+                            display:flex;align-items:center;justify-content:center;gap:8px">
+                            <span>✅</span> <span>Geolocation Map Successfully Generated</span>
+                            </p>
+                            <p style="color:{COLOR_MUTED};font-size:11px;margin:8px 0 0 0">
+                            All IP addresses have been geolocated and visualized on the interactive map above
+                            </p>
+                            </div>""",
+                            unsafe_allow_html=True,
+                        )
+                            
+                except Exception as e:
+                    st.warning(f"⚠️ Map could not be rendered: {e}. Check your internet connection for IP geolocation.")
 
         # ── CONNECTION DATA SUMMARY ───────────────────────
         section_header(
             "Connection Analysis",
-            "See who connected where - detailed breakdown of suspect connections",
+            "Detailed breakdown of connections - who connected where, when, and how much data transferred",
             "📊"
         )
         
-        # Build connection summary
-        connection_summary = []
-        for sub_id in df["Subscriber_ID"].unique():
-            sub_df = df[df["Subscriber_ID"] == sub_id]
-            if len(sub_df) == 0:
-                continue
-            
-            suspect_name = sub_df["Subscriber_Name"].iloc[0]
-            suspect_city = sub_df["City"].iloc[0] if "City" in sub_df.columns else "Unknown"
-            
-            # Get unique destinations
-            dest_ips = sub_df["Destination_IP"].unique()
-            total_sessions = len(sub_df)
-            total_data_mb = sub_df["Data_Volume_Bytes"].sum() / 1_048_576
-            tor_count = int(sub_df["Is_TOR"].sum())
-            foreign_count = int(sub_df["Is_Foreign_IP"].sum())
-            
-            # Top 5 destinations
-            top_dests = (
-                sub_df.groupby("Destination_IP")
-                .agg({"Timestamp": "count", "Data_Volume_Bytes": "sum"})
-                .sort_values("Timestamp", ascending=False)
-                .head(5)
+        # Check if single or multi subject
+        if len(suspect_files) < 2:
+            # SINGLE SUBJECT - Show comprehensive connection view
+            plain_english_box(
+                f"📍 Analyzing {format_indian(len(df))} total connections from <b>{uploaded_file.name.replace('.csv', '')}</b>. "
+                f"Contacted {df['Destination_IP'].nunique()} unique servers across "
+                f"{pd.to_datetime(df['Timestamp']).dt.date.nunique()} days.",
+                icon="📈"
             )
             
-            connection_summary.append({
-                "suspect_name": suspect_name,
-                "suspect_city": suspect_city,
-                "total_ips": len(dest_ips),
-                "total_sessions": total_sessions,
-                "total_data_mb": total_data_mb,
-                "tor_count": tor_count,
-                "foreign_count": foreign_count,
-                "top_destinations": top_dests
-            })
+            # Top Destination IPs
+            st.markdown("**🎯 Top 10 Most Contacted Servers**")
+            top_dests = df.groupby('Destination_IP').agg({
+                'Timestamp': 'count',
+                'Data_Volume_Bytes': 'sum',
+                'Is_TOR': 'any',
+                'Is_Foreign_IP': 'any',
+                'Destination_Port': lambda x: ', '.join(map(str, sorted(set(x))[:3]))
+            }).reset_index()
+            top_dests.columns = ['IP Address', 'Sessions', 'Data Volume', 'Is Tor', 'Is Foreign', 'Ports']
+            top_dests = top_dests.sort_values('Sessions', ascending=False).head(10)
+            
+            # Add flags
+            top_dests['Status'] = top_dests.apply(
+                lambda x: "🔴 TOR" if x['Is Tor'] else ("🌍 FOREIGN" if x['Is Foreign'] else "🔵 DOMESTIC"),
+                axis=1
+            )
+            top_dests['Data (MB)'] = (top_dests['Data Volume'] / 1_048_576).round(2)
+            
+            st.dataframe(
+                top_dests[['IP Address', 'Sessions', 'Data (MB)', 'Ports', 'Status']],
+                use_container_width=True,
+                hide_index=True
+            )
+            
+            # Connection distribution by protocol
+            st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("**📡 Protocol Distribution**")
+                proto_dist = df['App_Protocol'].value_counts().head(8)
+                st.bar_chart(proto_dist, height=220)
+            
+            with col2:
+                st.markdown("**🌍 Geographic Distribution**")
+                geo_dist = df.groupby('Is_Foreign_IP').size()
+                geo_labels = {True: 'Foreign', False: 'Domestic'}
+                geo_data = pd.DataFrame({
+                    'Type': [geo_labels.get(k, 'Unknown') for k in geo_dist.index],
+                    'Count': geo_dist.values
+                })
+                st.bar_chart(geo_data.set_index('Type'), height=220)
         
-        # Display connection cards
-        for idx, conn in enumerate(connection_summary):
-            with st.expander(f"👤 {conn['suspect_name']} - {conn['suspect_city']} ({conn['total_sessions']:,} sessions)", expanded=(idx==0)):
-                col1, col2, col3, col4 = st.columns(4)
+        else:
+            # MULTI SUBJECT - Show per-suspect breakdown
+            plain_english_box(
+                f"📍 Analyzing {len(suspect_files)} suspects with {format_indian(len(df))} total connections. "
+                f"Comparing activity patterns across all subjects.",
+                icon="👥"
+            )
+            
+            # Build connection summary per suspect
+            connection_summary = []
+            for label in suspect_labels:
+                sub_df = df[df["_suspect_label"] == label]
+                if len(sub_df) == 0:
+                    continue
                 
-                with col1:
-                    st.metric("Unique IPs", f"{conn['total_ips']}")
-                with col2:
-                    st.metric("Total Data", f"{conn['total_data_mb']:.1f} MB")
-                with col3:
-                    st.metric("🔴 Tor Sessions", f"{conn['tor_count']}", 
-                             delta=None if conn['tor_count'] == 0 else f"{(conn['tor_count']/conn['total_sessions']*100):.1f}%")
-                with col4:
-                    st.metric("🌍 Foreign IPs", f"{conn['foreign_count']}", 
-                             delta=None if conn['foreign_count'] == 0 else f"{(conn['foreign_count']/conn['total_sessions']*100):.1f}%")
+                file_name = sub_df["_file_name"].iloc[0] if "_file_name" in sub_df.columns else label
                 
-                st.markdown("**Top 5 Connected IPs:**")
+                # Get stats
+                dest_ips = sub_df["Destination_IP"].nunique()
+                total_sessions = len(sub_df)
+                total_data_mb = sub_df["Data_Volume_Bytes"].sum() / 1_048_576
+                tor_count = int(sub_df["Is_TOR"].sum())
+                foreign_count = int(sub_df["Is_Foreign_IP"].sum())
                 
-                top_dest_data = []
-                for ip, row in conn['top_destinations'].iterrows():
-                    sessions = int(row['Timestamp'])
-                    data_mb = row['Data_Volume_Bytes'] / 1_048_576
+                # Top 5 destinations
+                top_dests = (
+                    sub_df.groupby("Destination_IP")
+                    .agg({"Timestamp": "count", "Data_Volume_Bytes": "sum"})
+                    .sort_values("Timestamp", ascending=False)
+                    .head(5)
+                )
+                
+                connection_summary.append({
+                    "label": label,
+                    "file_name": file_name,
+                    "total_ips": dest_ips,
+                    "total_sessions": total_sessions,
+                    "total_data_mb": total_data_mb,
+                    "tor_count": tor_count,
+                    "foreign_count": foreign_count,
+                    "top_destinations": top_dests
+                })
+            
+            # Display connection cards
+            for idx, conn in enumerate(connection_summary):
+                with st.expander(
+                    f"{'🔴' if conn['tor_count'] > 5 else '🟠' if conn['foreign_count'] > 10 else '🔵'} "
+                    f"{conn['label']} - {conn['file_name']} ({format_indian(conn['total_sessions'])} sessions)",
+                    expanded=(idx==0)
+                ):
+                    col1, col2, col3, col4 = st.columns(4)
                     
-                    # Check if Tor or Foreign
-                    ip_df = df[(df["Subscriber_ID"] == df[df["Subscriber_Name"] == conn['suspect_name']]["Subscriber_ID"].iloc[0]) & 
-                              (df["Destination_IP"] == ip)]
-                    is_tor = ip_df["Is_TOR"].any() if len(ip_df) > 0 else False
-                    is_foreign = ip_df["Is_Foreign_IP"].any() if len(ip_df) > 0 else False
+                    with col1:
+                        st.metric("🌐 Unique IPs", format_indian(conn['total_ips']))
+                    with col2:
+                        st.metric("📦 Total Data", f"{conn['total_data_mb']:.1f} MB")
+                    with col3:
+                        tor_pct = (conn['tor_count']/conn['total_sessions']*100) if conn['total_sessions'] > 0 else 0
+                        st.metric("🔴 Tor", format_indian(conn['tor_count']), 
+                                 delta=f"{tor_pct:.1f}%" if conn['tor_count'] > 0 else None)
+                    with col4:
+                        foreign_pct = (conn['foreign_count']/conn['total_sessions']*100) if conn['total_sessions'] > 0 else 0
+                        st.metric("🌍 Foreign", format_indian(conn['foreign_count']), 
+                                 delta=f"{foreign_pct:.1f}%" if conn['foreign_count'] > 0 else None)
                     
-                    flag = ""
-                    if is_tor:
-                        flag = "🔴 TOR"
-                    elif is_foreign:
-                        flag = "🌍 Foreign"
-                    else:
-                        flag = "🔵 Domestic"
+                    st.markdown("**🎯 Top 5 Connected Servers:**")
                     
-                    top_dest_data.append({
-                        "IP Address": str(ip),
-                        "Type": flag,
-                        "Sessions": f"{sessions:,}",
-                        "Data (MB)": f"{data_mb:.2f}"
-                    })
-                
-                if top_dest_data:
-                    dest_df = pd.DataFrame(top_dest_data)
-                    st.dataframe(dest_df, use_container_width=True, hide_index=True)
+                    top_dest_data = []
+                    for ip, row in conn['top_destinations'].iterrows():
+                        sessions = int(row['Timestamp'])
+                        data_mb = row['Data_Volume_Bytes'] / 1_048_576
+                        
+                        # Check flags
+                        ip_df = df[(df["_suspect_label"] == conn['label']) & (df["Destination_IP"] == ip)]
+                        is_tor = ip_df["Is_TOR"].any() if len(ip_df) > 0 else False
+                        is_foreign = ip_df["Is_Foreign_IP"].any() if len(ip_df) > 0 else False
+                        
+                        flag = "🔴 TOR" if is_tor else ("🌍 FOREIGN" if is_foreign else "🔵 DOMESTIC")
+                        
+                        top_dest_data.append({
+                            "IP Address": str(ip),
+                            "Type": flag,
+                            "Sessions": format_indian(sessions),
+                            "Data (MB)": f"{data_mb:.2f}"
+                        })
+                    
+                    if top_dest_data:
+                        dest_df = pd.DataFrame(top_dest_data)
+                        st.dataframe(dest_df, use_container_width=True, hide_index=True)
 
         # ── SUSPICIOUS CONNECTIONS FLAGGING ─────────────────────────────────
         section_header(
@@ -2043,7 +2239,7 @@ if page == "📊 IPDR Forensic Analyzer":
                 flagged_connections.append({
                     'Timestamp': row['Timestamp'],
                     'Subscriber': row['Subscriber_Name'],
-                    'Phone': row.get('Phone_Number', 'N/A'),
+                    'Subscriber_ID': row.get('Subscriber_ID', 'N/A'),
                     'Destination_IP': row['Destination_IP'],
                     'Port': row['Destination_Port'],
                     'Data_MB': f"{row['Data_Volume_Bytes'] / (1024*1024):.2f}",
@@ -2098,144 +2294,230 @@ if page == "📊 IPDR Forensic Analyzer":
 
         with st.spinner("🔄 Building network graph..."):
             try:
-                graph_html = build_network_graph(df)
+                # For multi-subject, pass shared IPs to highlight gang connections
+                shared_ip_set = set()
+                if len(suspect_files) >= 2:
+                    # Get shared IPs from multi-IPDR analysis results if available
+                    if 'gang_results' in locals():
+                        shared_ips_df = gang_results.get('shared_ips', pd.DataFrame())
+                        if not shared_ips_df.empty:
+                            shared_ip_set = set(shared_ips_df['Destination_IP'].tolist())
+                
+                graph_html = build_network_graph(df, shared_ips=shared_ip_set)
                 render_graph(graph_html, height=660)
             except Exception as e:
                 st.warning(f"⚠️ Network graph could not be rendered: {e}")
 
-        # ── TRAFFIC TIMELINE ──────────────────────────────
-        section_header(
-            "Traffic Timeline & Heatmap",
-            "See when suspects were most active — the red zone (midnight to 5 AM) is the criminal fraud window",
-            "⏱️"
-        )
-
-        with st.spinner("📈 Building timeline..."):
-            try:
-                fig_hourly  = build_hourly_timeline(df)
-                fig_heatmap = build_heatmap(df)
-
-                st.plotly_chart(fig_hourly,  use_container_width=True)
-                plain_english_box(get_peak_hour_summary(df), icon="⏰")
-                st.plotly_chart(fig_heatmap, use_container_width=True)
-                plain_english_box(
-                    "The heatmap above shows activity across days and hours. Darker cyan cells = more activity. "
-                    "Any dark activity in the 00:00–05:00 columns (far left) is highly suspicious.",
-                    icon="🗓️",
-                )
-            except Exception as e:
-                st.warning(f"⚠️ Timeline could not be rendered: {e}")
-
-        # ── SUSPECT PROFILE CARDS ─────────────────────────
-        section_header(
-            "Detailed Suspect Profiles",
-            "Complete profile for each individual in the IPDR data",
-            "👤"
-        )
-
-        for _, profile in profiles.iterrows():
-            sub_risk = risk_scores[risk_scores["Subscriber_ID"] == profile["Subscriber_ID"]]
-            risk_score_val = int(sub_risk["Risk_Score"].iloc[0]) if not sub_risk.empty else 0
-            risk_c = get_risk_color(risk_score_val)
-
-            sub_mitre = mitre_df  # All MITRE detections (per-suspect filtering is complex without flags)
-            top_ips_list = profile.get("top_dest_ips") or []
-
-            with st.expander(f"👤 {profile['Subscriber_Name']} — {profile['Subscriber_ID']}", expanded=False):
-                p1, p2 = st.columns([3, 1])
-                with p1:
-                    st.markdown(
-                        f"<p style='color:{COLOR_MUTED};font-size:12px;margin:0 0 8px 0'>SUBSCRIBER DETAILS</p>",
-                        unsafe_allow_html=True,
-                    )
-                    col_x, col_y = st.columns(2)
-                    with col_x:
-                        st.markdown(
-                            f"<p style='color:{COLOR_MUTED};font-size:11px;margin:2px 0'>Total Sessions</p>"
-                            f"<p style='color:{COLOR_TEXT};font-size:16px;font-weight:700;margin:0 0 8px 0'>{format_indian(profile['total_sessions'])}</p>"
-                            f"<p style='color:{COLOR_MUTED};font-size:11px;margin:2px 0'>Data Transferred</p>"
-                            f"<p style='color:{COLOR_TEXT};font-size:16px;font-weight:700;margin:0 0 8px 0'>{format_bytes(profile['total_bytes'])}</p>"
-                            f"<p style='color:{COLOR_MUTED};font-size:11px;margin:2px 0'>Peak Active Hour</p>"
-                            f"<p style='color:{COLOR_ACCENT};font-size:16px;font-weight:700;margin:0 0 8px 0'>{int(profile.get('peak_hour',0)):02d}:00 IST</p>",
-                            unsafe_allow_html=True,
-                        )
-                    with col_y:
-                        st.markdown(
-                            f"<p style='color:{COLOR_MUTED};font-size:11px;margin:2px 0'>Tor Sessions</p>"
-                            f"<p style='color:{COLOR_CRITICAL};font-size:16px;font-weight:700;margin:0 0 8px 0'>{format_indian(profile['tor_sessions'])}</p>"
-                            f"<p style='color:{COLOR_MUTED};font-size:11px;margin:2px 0'>Foreign Sessions</p>"
-                            f"<p style='color:{COLOR_HIGH};font-size:16px;font-weight:700;margin:0 0 8px 0'>{format_indian(profile['foreign_sessions'])}</p>"
-                            f"<p style='color:{COLOR_MUTED};font-size:11px;margin:2px 0'>Off-Hours Sessions</p>"
-                            f"<p style='color:#FFD700;font-size:16px;font-weight:700;margin:0 0 8px 0'>{format_indian(profile['off_hours_sessions'])}</p>",
-                            unsafe_allow_html=True,
-                        )
-
-                    if top_ips_list:
-                        st.markdown(f"<p style='color:{COLOR_MUTED};font-size:11px;margin:8px 0 4px 0'>Top Destination IPs</p>", unsafe_allow_html=True)
-                        for ip in top_ips_list[:3]:
-                            st.markdown(f"<code style='background:{COLOR_CARD};color:{COLOR_ACCENT};padding:2px 6px;border-radius:4px;font-size:12px'>{ip}</code> ", unsafe_allow_html=True)
-
-                with p2:
-                    st.markdown(
-                        f"""<div style="text-align:center;background:{risk_c}11;
-                        border:2px solid {risk_c}44;border-radius:12px;padding:16px;margin-top:16px">
-                        <p style="color:{COLOR_MUTED};font-size:10px;margin:0">RISK SCORE</p>
-                        <p style="color:{risk_c};font-size:38px;font-weight:700;margin:4px 0;line-height:1">{risk_score_val}</p>
-                        <p style="color:{risk_c};font-size:12px;font-weight:700;margin:0">
-                        {'CRITICAL' if risk_score_val>=80 else 'HIGH' if risk_score_val>=60 else 'MEDIUM' if risk_score_val>=40 else 'LOW'}</p>
-                        </div>""",
-                        unsafe_allow_html=True,
-                    )
-
-        # ── PDF REPORT BUTTON ─────────────────────────────
+        # ── PDF REPORT GENERATION ─────────────────────────────
         st.markdown("---")
-        section_header("Generate Court-Ready Report", "Download a comprehensive PDF report for legal proceedings", "📄")
-
-        col_ref, col_off, col_station = st.columns(3)
-        with col_ref:
-            case_ref = st.text_input("Case/FIR Number", value="GPCSSI-2026-001", key="case_ref_p1")
-        with col_off:
-            officer_name = st.text_input("Investigating Officer", value="", placeholder="Full name with rank", key="officer_p1")
-        with col_station:
-            station_name = st.text_input("Police Station/Unit", value="", placeholder="e.g., Cyber Crime Cell", key="station_p1")
         
-        col_fir, col_court = st.columns(2)
-        with col_fir:
-            fir_number = st.text_input("FIR Number (if different)", value="", placeholder="Optional", key="fir_p1")
-        with col_court:
-            court_name = st.text_input("Court Name", value="", placeholder="e.g., District Court", key="court_p1")
+        # Professional Report Header
+        st.markdown(
+            f"""<div style="background:linear-gradient(135deg,{COLOR_CARD},{COLOR_BG});
+            border:2px solid {COLOR_ACCENT};border-radius:12px;padding:24px;margin-bottom:24px;
+            box-shadow:0 8px 32px rgba(0,0,0,0.3)">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+            <div style="font-size:32px">📋</div>
+            <div>
+            <h2 style="color:{COLOR_ACCENT};font-size:22px;font-weight:800;margin:0;
+            font-family:'Inter',sans-serif;letter-spacing:-0.5px">COURT SUBMISSION REPORT</h2>
+            <p style="color:{COLOR_MUTED};font-size:13px;margin:4px 0 0 0;font-family:'Inter',sans-serif">
+            Section 65B Indian Evidence Act 1872 Compliant • Electronic Record Certificate</p>
+            </div>
+            </div>
+            <div style="background:rgba(0,229,255,0.08);border-left:3px solid #00E5FF;
+            padding:12px 16px;border-radius:6px">
+            <p style="color:{COLOR_TEXT};font-size:12px;margin:0;line-height:1.6;font-family:'Inter',sans-serif">
+            <b>Legal Compliance:</b> This comprehensive IPDR analysis report contains digital evidence admissible 
+            under Section 65B of the Indian Evidence Act 1872, suitable for submission to courts of law. 
+            The report includes technical analysis, risk assessments, MITRE ATT&CK framework mappings, 
+            and network intelligence findings.</p>
+            </div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
 
-        if st.button("📄 Generate Court-Ready PDF Report", key="pdf_btn_p1", use_container_width=True):
-            with st.spinner("🖨️ Generating comprehensive legal PDF report..."):
-                try:
-                    analysis_state_for_pdf = {
-                        "loaded": True,
-                        "stats": stats,
-                        "risk_scores": risk_scores,
-                        "mitre_results": mitre_df,
-                        "df": df,
-                    }
-                    pdf_bytes = generate_pdf(
-                        stats=stats,
-                        risk_scores=risk_scores,
-                        mitre_results=mitre_df,
-                        df=df,
-                        case_ref=case_ref,
-                        officer_name=officer_name,
-                        station_name=station_name,
-                        fir_number=fir_number or case_ref,
-                        court_name=court_name,
-                    )
-                    st.download_button(
-                        label="⬇️ Download PDF Report (Court Submission)",
-                        data=pdf_bytes,
-                        file_name=f"SURAAG_Report_{case_ref.replace(' ', '_')}_{pd.Timestamp.now().strftime('%Y%m%d_%H%M')}.pdf",
-                        mime="application/pdf",
-                        use_container_width=True,
-                    )
-                    st.success("✅ Court-ready report generated successfully. Click above to download.")
-                except Exception as e:
-                    st.error(f"❌ Could not generate report: {e}")
+        # Report Form - Professional Layout
+        st.markdown(
+            f"""<div style="background:{COLOR_CARD};border:1px solid {COLOR_BORDER};
+            border-radius:10px;padding:20px;margin-bottom:20px">
+            <p style="color:{COLOR_ACCENT};font-size:13px;font-weight:700;margin:0 0 16px 0;
+            text-transform:uppercase;letter-spacing:1.5px;font-family:'Inter',sans-serif">
+            📝 REPORT DOCUMENTATION DETAILS</p>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+        
+        # Case Information
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            case_ref = st.text_input(
+                "Case Number / Reference ID",
+                value="",
+                placeholder="e.g., FIR-2026/CC/0123",
+                key="case_ref_p1",
+                help="Official case or FIR reference number"
+            )
+        with col2:
+            officer_name = st.text_input(
+                "Investigating Officer",
+                value="",
+                placeholder="e.g., Inspector Rajesh Kumar",
+                key="officer_p1",
+                help="Name with rank of investigating officer"
+            )
+        with col3:
+            report_date = st.date_input(
+                "Report Date",
+                value=pd.Timestamp.now(),
+                key="report_date_p1",
+                help="Date of report generation"
+            )
+        
+        # Organization Details
+        col4, col5 = st.columns(2)
+        with col4:
+            station_name = st.text_input(
+                "Investigating Agency / Police Station",
+                value="",
+                placeholder="e.g., Cyber Crime Cell, Delhi Police",
+                key="station_p1",
+                help="Name of investigating organization or police station"
+            )
+        with col5:
+            court_name = st.text_input(
+                "Court / Authority (Optional)",
+                value="",
+                placeholder="e.g., District Court, Patiala House",
+                key="court_p1",
+                help="Court or legal authority for submission"
+            )
+        
+        # Additional Information
+        st.markdown(f"<div style='height:12px'></div>", unsafe_allow_html=True)
+        
+        col6, col7 = st.columns(2)
+        with col6:
+            case_type = st.selectbox(
+                "Case Type",
+                ["Cyber Crime Investigation", "Financial Fraud", "Data Breach", "Unauthorized Access", 
+                 "Cyber Terrorism", "Online Harassment", "Identity Theft", "Other"],
+                key="case_type_p1",
+                help="Nature of the investigation"
+            )
+        with col7:
+            sections_applied = st.text_input(
+                "Legal Sections Applied (Optional)",
+                value="",
+                placeholder="e.g., IT Act Sec 66, 66C; IPC 420",
+                key="sections_p1",
+                help="Relevant IPC/IT Act sections"
+            )
+
+        # Report Summary
+        report_summary = st.text_area(
+            "Investigation Summary / Background (Optional)",
+            value="",
+            placeholder="Brief description of the case, investigation objectives, and key findings...",
+            height=100,
+            key="summary_p1",
+            help="Executive summary of the investigation"
+        )
+
+        # Certificate Declaration
+        st.markdown(
+            f"""<div style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.3);
+            border-left:3px solid #8B5CF6;border-radius:8px;padding:14px 18px;margin:20px 0">
+            <p style="color:#A78BFA;font-size:11px;font-weight:700;margin:0 0 8px 0;
+            text-transform:uppercase;letter-spacing:1px">⚖️ SECTION 65B CERTIFICATE</p>
+            <p style="color:{COLOR_MUTED};font-size:11px;margin:0;line-height:1.6;font-family:'Inter',sans-serif">
+            By generating this report, the investigating officer certifies that the electronic records 
+            contained herein were produced by a computer during the regular course of investigation, 
+            and that the information contained is derived from proper information sources in accordance 
+            with Section 65B of the Indian Evidence Act, 1872.</p>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+
+        # Generate Button
+        if st.button("📄 GENERATE COURT-READY REPORT", key="pdf_btn_p1", use_container_width=True, type="primary"):
+            # Validation
+            if not case_ref or not officer_name or not station_name:
+                st.error("❌ Please fill mandatory fields: Case Number, Investigating Officer, and Agency/Station.")
+            else:
+                with st.spinner("⚙️ Generating comprehensive court-ready report with digital evidence..."):
+                    try:
+                        # Prepare comprehensive officer name with additional info
+                        full_officer = f"{officer_name}"
+                        if sections_applied:
+                            full_officer += f" | Sections: {sections_applied}"
+                        
+                        # Generate PDF
+                        pdf_bytes = generate_pdf(
+                            stats=stats,
+                            risk_scores=risk_scores,
+                            mitre_results=mitre_df,
+                            df=df,
+                            case_ref=case_ref,
+                            officer_name=full_officer,
+                            station_name=station_name,
+                            fir_number=case_ref,
+                            court_name=court_name or "For Official Investigation",
+                        )
+                        
+                        # Success Message with Certificate Badge
+                        st.markdown(
+                            f"""<div style="background:linear-gradient(135deg,rgba(0,255,136,0.12),rgba(0,229,255,0.08));
+                            border:2px solid #00FF88;border-radius:10px;padding:18px 24px;margin:16px 0;
+                            box-shadow:0 4px 20px rgba(0,255,136,0.2)">
+                            <div style="display:flex;align-items:center;gap:12px">
+                            <div style="font-size:28px">✅</div>
+                            <div>
+                            <p style="color:#00FF88;font-size:14px;font-weight:800;margin:0 0 4px 0;
+                            text-transform:uppercase;letter-spacing:1px">REPORT GENERATED SUCCESSFULLY</p>
+                            <p style="color:{COLOR_TEXT};font-size:12px;margin:0;line-height:1.5">
+                            Your court-ready IPDR analysis report with Section 65B certificate is ready for download.</p>
+                            </div>
+                            </div>
+                            </div>""",
+                            unsafe_allow_html=True,
+                        )
+                        
+                        # Download Button
+                        timestamp = pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')
+                        filename = f"Court_Report_{case_ref.replace(' ', '_').replace('/', '-')}_{timestamp}.pdf"
+                        
+                        st.download_button(
+                            label="⬇️ DOWNLOAD OFFICIAL REPORT (PDF)",
+                            data=pdf_bytes,
+                            file_name=filename,
+                            mime="application/pdf",
+                            use_container_width=True,
+                        )
+                        
+                        # Report Details Info
+                        st.markdown(
+                            f"""<div style="background:{COLOR_CARD};border:1px solid {COLOR_BORDER};
+                            border-radius:8px;padding:14px 18px;margin-top:12px">
+                            <p style="color:{COLOR_MUTED};font-size:11px;margin:0 0 8px 0;
+                            font-weight:600;text-transform:uppercase;letter-spacing:0.5px">REPORT DETAILS</p>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                            <p style="color:{COLOR_MUTED};font-size:11px;margin:0">
+                            <b>Case:</b> {case_ref}</p>
+                            <p style="color:{COLOR_MUTED};font-size:11px;margin:0">
+                            <b>Officer:</b> {officer_name}</p>
+                            <p style="color:{COLOR_MUTED};font-size:11px;margin:0">
+                            <b>Date:</b> {report_date.strftime('%d %B %Y')}</p>
+                            <p style="color:{COLOR_MUTED};font-size:11px;margin:0">
+                            <b>Type:</b> {case_type}</p>
+                            </div>
+                            </div>""",
+                            unsafe_allow_html=True,
+                        )
+                        
+                    except Exception as e:
+                        st.error(f"❌ Report generation failed: {e}")
+                        st.info("💡 Please verify all inputs and try again. Contact technical support if the issue persists.")
 
         # ── CHATBOT ───────────────────────────────────────
         analysis_state = {
@@ -2252,689 +2534,82 @@ if page == "📊 IPDR Forensic Analyzer":
 # PAGE 2: MULTI-IPDR CORRELATION
 # ══════════════════════════════════════════════════════════
 
-elif page == "🔗 Gang Correlation Analysis":
-
-    # Page header with classification
-    st.markdown(
-        f"""<div style="background:linear-gradient(135deg, {COLOR_CRITICAL}22, {COLOR_HIGH}11);
-        border-left:4px solid {COLOR_CRITICAL};padding:12px 20px;border-radius:8px;margin-bottom:20px">
-        <p style="color:{COLOR_CRITICAL};font-size:11px;font-weight:700;margin:0;text-transform:uppercase;letter-spacing:1px">
-        ⚠ CONFIDENTIAL — LAW ENFORCEMENT USE ONLY</p>
-        <p style="color:{COLOR_MUTED};font-size:9px;margin:4px 0 0 0">
-        IT Act 2000 Section 67C, 120B IPC (Criminal Conspiracy) | Indian Evidence Act 1872 Section 65B</p>
-        </div>""",
-        unsafe_allow_html=True,
-    )
-    
-    st.markdown(
-        f"""<div style="border-bottom:2px solid {COLOR_ACCENT};padding-bottom:16px;margin-bottom:24px">
-        <h1 style="color:{COLOR_TEXT};font-size:28px;font-weight:700;margin:0">
-        🔗 Gang Correlation & Multi-Suspect Analysis</h1>
-        <p style="color:{COLOR_MUTED};font-size:14px;margin:6px 0 0 0">
-        Upload IPDR records from 2–6 different suspects to detect organized criminal gangs, shared infrastructure, 
-        and coordinated cyber operations. Evidence suitable for IPC 120B (Criminal Conspiracy) charges.</p>
-        </div>""",
-        unsafe_allow_html=True,
-    )
-
-    plain_english_box(
-        "This tool looks for connections between multiple suspects' internet records. "
-        "If two suspects visited the same secret server, or were active at the exact same time, "
-        "this tool will find it — and score how likely they are to be working together as a gang.",
-        icon="🕵️",
-    )
-
-    # ── MULTI-FILE UPLOAD ─────────────────────────────────
-    uploaded_files = st.file_uploader(
-        "Upload 2–6 IPDR CSV Files (one per suspect)",
-        type=["csv"],
-        accept_multiple_files=True,
-        key="ipdr_upload_p2",
-        help="Upload separate IPDR CSV files for each suspect. Files will be labeled Suspect A, B, C...",
-    )
-
-    if not uploaded_files or len(uploaded_files) < 2:
-        empty_state(
-            "Upload at least <b>2 IPDR CSV files</b> (one per suspect) to begin correlation analysis.<br><br>"
-            "The tool will automatically detect shared servers, synchronized activity, and gang patterns.",
-            icon="🔗",
-        )
-        if uploaded_files and len(uploaded_files) == 1:
-            st.warning("⚠️ Please upload at least 2 files to run correlation analysis.")
-
-    else:
-        from modules.ipdr_analyzer import (
-            load_and_validate, compute_summary_stats,
-            format_bytes, format_indian,
-        )
-        from modules.risk_scorer import compute_risk_scores, get_risk_color
-        from modules.correlation_engine import correlate_ipdrs
-        from modules.traffic_patterns import build_subscriber_timeline
-        from modules.network_graph import build_network_graph, render_graph
-        from modules.chatbot import render_chatbot
-        from modules.report_gen import generate_pdf
-
-        if len(uploaded_files) > 6:
-            st.warning("⚠️ Maximum 6 files supported. Only the first 6 will be analyzed.")
-            uploaded_files = uploaded_files[:6]
-
-        labels_alpha = list("ABCDEFGHIJ")
-        labels = [f"Suspect {labels_alpha[i]}" for i in range(len(uploaded_files))]
-
-        # Load all files
-        dfs = []
-        load_errors = []
-
-        with st.spinner("📥 Loading all IPDR files..."):
-            for i, uf in enumerate(uploaded_files):
-                df_i, err = load_and_validate(uf.getvalue(), uf.name)
-                if err:
-                    load_errors.append(f"**{labels[i]}** ({uf.name}): {err}")
-                else:
-                    dfs.append(df_i)
-
-        if load_errors:
-            for e in load_errors:
-                st.error(f"❌ {e}")
-            st.stop()
-
-        # Per-suspect summary cards
-        st.markdown(f"<h3 style='color:{COLOR_ACCENT};font-size:16px;margin:16px 0 10px 0'>Suspect Summaries</h3>", unsafe_allow_html=True)
-
-        suspect_cols = st.columns(len(dfs))
-        for i, (df_i, label, uf) in enumerate(zip(dfs, labels, uploaded_files)):
-            stats_i = compute_summary_stats(df_i)
-            risk_i  = compute_risk_scores(df_i)
-            risk_score_i = int(risk_i["Risk_Score"].max()) if not risk_i.empty else 0
-            risk_c = get_risk_color(risk_score_i)
-            name_i = df_i["Subscriber_Name"].iloc[0] if len(df_i) > 0 else "Unknown"
-
-            with suspect_cols[i]:
-                st.markdown(
-                    f"""<div style="background:{COLOR_CARD};border:1px solid {COLOR_BORDER};
-                    border-top:3px solid {risk_c};border-radius:12px;padding:14px;text-align:center">
-                    <p style="color:{COLOR_ACCENT};font-size:13px;font-weight:700;margin:0">{label}</p>
-                    <p style="color:{COLOR_TEXT};font-size:14px;font-weight:600;margin:4px 0">{name_i}</p>
-                    <p style="color:{COLOR_MUTED};font-size:11px;margin:0">{uf.name}</p>
-                    <hr style="border-color:{COLOR_BORDER};margin:8px 0">
-                    <p style="color:{COLOR_MUTED};font-size:11px;margin:2px 0">Sessions: 
-                    <b style="color:{COLOR_TEXT}">{format_indian(stats_i['total_sessions'])}</b></p>
-                    <p style="color:{COLOR_MUTED};font-size:11px;margin:2px 0">Risk Score: 
-                    <b style="color:{risk_c}">{risk_score_i}/100</b></p>
-                    <p style="color:{COLOR_MUTED};font-size:11px;margin:2px 0">Tor: 
-                    <b style="color:{COLOR_CRITICAL}">{stats_i['tor_sessions']}</b></p>
-                    </div>""",
-                    unsafe_allow_html=True,
-                )
-
-        # ── RUN CORRELATION ───────────────────────────────
-        st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
-        with st.spinner("🔬 Running gang correlation analysis..."):
-            try:
-                result = correlate_ipdrs(tuple(dfs), tuple(labels))
-                combined_df  = result["combined_df"]
-                shared_ips   = result["shared_ips"]
-                sync_windows = result["sync_windows"]
-                shared_infra = result["shared_infra"]
-                gang_score   = result["gang_score"]
-                verdict      = result["verdict"]
-                evidence     = result["evidence_points"]
-            except Exception as e:
-                st.error(f"❌ Correlation analysis failed: {e}")
-                st.stop()
-
-        # ── GANG DETECTION SCORE ──────────────────────────
-        section_header("🎯 Gang Detection Verdict", "Overall assessment of whether these suspects are operating as an organized group")
-        verdict_color = verdict["color"]
-        st.markdown(
-            f"""<div style="background:{verdict_color}11;border:2px solid {verdict_color}44;
-            border-radius:16px;padding:24px;text-align:center;margin-bottom:16px">
-            <p style="color:{COLOR_MUTED};font-size:13px;margin:0 0 4px 0">Gang Probability Score</p>
-            <p style="color:{verdict_color};font-size:56px;font-weight:700;margin:0;line-height:1">{gang_score}%</p>
-            <p style="color:{verdict_color};font-size:18px;font-weight:700;margin:8px 0 0 0">
-            {verdict['emoji']} {verdict['label']}</p>
-            <p style="color:{COLOR_TEXT};font-size:13px;margin:8px 0 0 0;max-width:500px;margin-left:auto;margin-right:auto">
-            {verdict['description']}</p>
-            </div>""",
-            unsafe_allow_html=True,
-        )
-
-        # Evidence points
-        st.markdown(f"<p style='color:{COLOR_MUTED};font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px 0'>Top Evidence Points</p>", unsafe_allow_html=True)
-        for ev in evidence:
-            st.markdown(
-                f"""<div style="background:{COLOR_CARD};border:1px solid {COLOR_BORDER};
-                border-left:3px solid {verdict_color};border-radius:8px;
-                padding:10px 14px;margin-bottom:6px;color:{COLOR_TEXT};font-size:13px">
-                ▸ {ev}</div>""",
-                unsafe_allow_html=True,
-            )
-
-        # ── SHARED IP DETECTION ───────────────────────────
-        section_header("🔴 Shared IP Addresses", "IP addresses found in multiple suspect records — the strongest gang evidence")
-
-        if shared_ips.empty:
-            st.info("No shared IP addresses found across the uploaded files.")
-        else:
-            plain_english_box(
-                f"{len(shared_ips)} IP address(es) were found in records from more than one suspect. "
-                "This means multiple suspects contacted the same server — strong evidence of coordinated activity.",
-                icon="🔗",
-            )
-            with st.expander(f"📋 View Shared IPs Table ({len(shared_ips)} IPs)", expanded=True):
-                for _, row in shared_ips.iterrows():
-                    count = row["Suspect_Count"]
-                    rc = COLOR_CRITICAL if count == len(dfs) else (COLOR_HIGH if count >= 3 else "#FFD700")
-                    st.markdown(
-                        f"""<div style="display:flex;align-items:center;gap:16px;
-                        background:{COLOR_CARD};border:1px solid {rc}44;
-                        border-left:4px solid {rc};border-radius:8px;
-                        padding:10px 14px;margin-bottom:6px">
-                        <div style="flex:1.5">
-                        <code style="color:{COLOR_ACCENT};font-size:14px">{row['IP_Address']}</code>
-                        </div>
-                        <div style="flex:2">
-                        <span style="color:{COLOR_MUTED};font-size:11px">Found In</span><br>
-                        <span style="color:{COLOR_TEXT};font-size:13px;font-weight:500">{row['Found_In_Suspects']}</span>
-                        </div>
-                        <div style="flex:0.8;text-align:center">
-                        <span style="color:{COLOR_MUTED};font-size:11px">Sessions</span><br>
-                        <span style="color:{COLOR_TEXT};font-size:14px;font-weight:600">{int(row.get('Total_Sessions',0)):,}</span>
-                        </div>
-                        <div style="flex:0.8;text-align:center">
-                        <span style="color:{rc};background:{rc}22;border:1px solid {rc}44;
-                        border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700">{row['Risk_Level']}</span>
-                        </div>
-                        </div>""",
-                        unsafe_allow_html=True,
-                    )
-
-        # ── TIME WINDOW OVERLAP ───────────────────────────
-        section_header("⏱️ Synchronized Activity Windows", "Periods when multiple suspects were online at the exact same time")
-
-        if sync_windows.empty:
-            st.info("No synchronized time windows detected.")
-        else:
-            plain_english_box(
-                f"{len(sync_windows)} time window(s) found where multiple suspects were active simultaneously. "
-                "Synchronized online activity — especially at night — is a strong sign of coordinated criminal operation.",
-                icon="⏱️",
-            )
-
-            with st.expander(f"📋 View Synchronized Windows ({len(sync_windows)} found)", expanded=False):
-                st.dataframe(
-                    sync_windows.rename(columns={
-                        "Window_Start": "Time Window",
-                        "Suspects_Active": "Suspects Online",
-                        "Suspect_Count": "Count",
-                    }),
-                    use_container_width=True,
-                    hide_index=True,
-                )
-
-            with st.spinner("📈 Building combined timeline..."):
-                try:
-                    fig_combined = build_subscriber_timeline(combined_df)
-                    st.plotly_chart(fig_combined, use_container_width=True)
-                    plain_english_box(
-                        "The chart above shows when each suspect was active during the day. "
-                        "Peaks that overlap (same hour, different suspects) indicate coordinated activity.",
-                        icon="📈",
-                    )
-                except Exception as e:
-                    st.warning(f"⚠️ Timeline could not be rendered: {e}")
-
-        # ── SHARED INFRASTRUCTURE ─────────────────────────
-        section_header("🏗️ Shared Infrastructure", "Same servers, ports, and ISPs used by multiple suspects")
-
-        infra_table = shared_infra.get("infra_table")
-        if infra_table is not None and not infra_table.empty:
-            with st.expander("📋 Shared Infrastructure Details", expanded=False):
-                st.dataframe(infra_table, use_container_width=True, hide_index=True)
-        else:
-            st.info("No shared infrastructure detected.")
-
-        # ── COMBINED NETWORK GRAPH ────────────────────────
-        section_header("🕸️ Combined Network Graph", "All suspects and all servers in one view — shared servers appear as large white nodes")
-        plain_english_box(
-            "The large white squares are servers used by multiple suspects — they form the core link between gang members. "
-            "Different colored circles represent different suspects. Thick lines = more data transferred.",
-            icon="🕸️",
-        )
-
-        with st.spinner("🔄 Building combined network graph..."):
-            try:
-                shared_ip_set = set(shared_ips["IP_Address"].tolist()) if not shared_ips.empty else set()
-                combined_html = build_network_graph(combined_df, shared_ips=shared_ip_set)
-                render_graph(combined_html, height=650)
-            except Exception as e:
-                st.warning(f"⚠️ Combined network graph could not be rendered: {e}")
-
-        # ── PDF REPORT (Page 2) ───────────────────────────
-        st.markdown("---")
-        section_header("📄 Generate Court-Ready Report", "Download a comprehensive PDF report covering all suspects")
-
-        col_ref2, col_off2, col_station2 = st.columns(3)
-        with col_ref2:
-            case_ref2 = st.text_input("Case/FIR Number", value="GPCSSI-2026-001", key="case_ref_p2")
-        with col_off2:
-            officer_name2 = st.text_input("Investigating Officer", value="", placeholder="Full name with rank", key="officer_p2")
-        with col_station2:
-            station_name2 = st.text_input("Police Station/Unit", value="", placeholder="e.g., Cyber Crime Cell", key="station_p2")
-        
-        col_fir2, col_court2 = st.columns(2)
-        with col_fir2:
-            fir_number2 = st.text_input("FIR Number (if different)", value="", placeholder="Optional", key="fir_p2")
-        with col_court2:
-            court_name2 = st.text_input("Court Name", value="", placeholder="e.g., District Court", key="court_p2")
-
-        if st.button("📄 Generate Gang Correlation PDF Report", key="pdf_btn_p2", use_container_width=True):
-            with st.spinner("🖨️ Generating comprehensive gang analysis PDF report..."):
-                try:
-                    all_stats   = compute_summary_stats(combined_df)
-                    all_risks   = compute_risk_scores(combined_df)
-                    from modules.mitre_mapper import run_mitre_mapping
-                    all_mitre   = run_mitre_mapping(combined_df)
-
-                    pdf_bytes2 = generate_pdf(
-                        stats=all_stats,
-                        risk_scores=all_risks,
-                        mitre_results=all_mitre,
-                        df=combined_df,
-                        correlation=result,
-                        case_ref=case_ref2,
-                        officer_name=officer_name2,
-                        station_name=station_name2,
-                        fir_number=fir_number2 or case_ref2,
-                        court_name=court_name2,
-                    )
-                    st.download_button(
-                        label="⬇️ Download Gang Correlation PDF Report",
-                        data=pdf_bytes2,
-                        file_name=f"SURAAG_Gang_Report_{case_ref2.replace(' ', '_')}_{pd.Timestamp.now().strftime('%Y%m%d_%H%M')}.pdf",
-                        mime="application/pdf",
-                        use_container_width=True,
-                    )
-                    st.success("✅ Gang correlation report generated. Click above to download.")
-                except Exception as e:
-                    st.error(f"❌ Could not generate report: {e}")
-
-        # ── CHATBOT ───────────────────────────────────────
-        corr_analysis_state = {
-            "loaded":      True,
-            "stats":       compute_summary_stats(combined_df),
-            "risk_scores": compute_risk_scores(combined_df),
-            "df":          combined_df,
-            "correlation": result,
-        }
-        render_chatbot(corr_analysis_state, chat_key="chat_page2")
-
-
 # ══════════════════════════════════════════════════════════
 # PAGE 3: WEB ANALYSIS TOOLS
 # ══════════════════════════════════════════════════════════
 
-elif page == "🌐 Web Analysis Tools":
+elif page == "🌐 IPDR Analysis Tool":
     import os
+    import streamlit.components.v1 as components
     
-    st.markdown(
-        """
-        <h1 style="
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            font-weight: 700;
-            font-size: 1.875rem;
-            color: #F0F6FC;
-            margin: 0 0 1.5rem 0;
-            line-height: 1.2;
-        ">Web Analysis Tools</h1>
-        """,
-        unsafe_allow_html=True,
-    )
+    # Full page mode - hide everything including sidebar
+    st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    [data-testid="stSidebar"] {display: none;}
+    .main > div {padding: 0 !important;}
+    .block-container {
+        padding: 0 !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+    }
+    iframe {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw !important;
+        height: 100vh !important;
+        border: none !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     
-    # Description
-    st.markdown(
-        """
-        <div style="
-            background: hsl(215, 48%, 10%);
-            border: 1px solid hsl(215, 28%, 17%);
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        ">
-            <p style="
-                font-size: 1rem;
-                color: hsl(215, 14%, 65%);
-                margin: 0;
-                line-height: 1.6;
-                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            ">
-                Access powerful browser-based analysis tools. No installation required - works directly in your browser with full offline support.
-                All data processing happens locally on your machine for maximum security.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    base_dir = os.path.abspath(os.path.dirname(__file__))
+    ipdr_path = os.path.join(base_dir, "cdr-and-ipdr", "IPDR_Analysis_Tool_v5.html")
     
-    # Tools Grid
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown(
-            """
-            <div style="
-                background: linear-gradient(135deg, hsl(215, 48%, 10%), hsl(212, 33%, 13%));
-                border: 1px solid hsl(215, 28%, 17%);
-                border-radius: 1rem;
-                padding: 2rem;
-                height: 100%;
-                transition: all 0.3s ease;
-            ">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">📱</div>
-                <h3 style="
-                    font-size: 1.5rem;
-                    font-weight: 700;
-                    color: hsl(210, 40%, 98%);
-                    margin-bottom: 0.75rem;
-                    font-family: 'Inter', sans-serif;
-                ">CDR Analysis</h3>
-                <p style="
-                    color: hsl(215, 14%, 65%);
-                    font-size: 0.95rem;
-                    line-height: 1.6;
-                    margin-bottom: 1.5rem;
-                ">
-                    Call Detail Record analysis with network mapping and communication pattern detection.
-                </p>
-                <ul style="
-                    color: hsl(215, 14%, 65%);
-                    font-size: 0.875rem;
-                    list-style: none;
-                    padding: 0;
-                    margin-bottom: 1.5rem;
-                ">
-                    <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="color: hsl(158, 100%, 50%); font-weight: 700;">✓</span>
-                        Contact network visualization
-                    </li>
-                    <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="color: hsl(158, 100%, 50%); font-weight: 700;">✓</span>
-                        Communication patterns
-                    </li>
-                    <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="color: hsl(158, 100%, 50%); font-weight: 700;">✓</span>
-                        Timeline analysis
-                    </li>
-                    <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="color: hsl(158, 100%, 50%); font-weight: 700;">✓</span>
-                        100% client-side
-                    </li>
-                </ul>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        
-        cdr_path = os.path.join(os.path.dirname(__file__), "cdr-and-ipdr", "CDR_Analysis_Tool_v2.html")
-        if os.path.exists(cdr_path):
-            if st.button("🚀 Launch CDR Tool", key="cdr_launch", use_container_width=True):
-                os.system(f'open "{cdr_path}"')
-                st.success("✅ CDR Analysis Tool opened in your browser!")
-        else:
-            st.warning("⚠️ CDR tool not found. Please check installation.")
-    
-    with col2:
-        st.markdown(
-            """
-            <div style="
-                background: linear-gradient(135deg, hsl(215, 48%, 10%), hsl(212, 33%, 13%));
-                border: 1px solid hsl(215, 28%, 17%);
-                border-radius: 1rem;
-                padding: 2rem;
-                height: 100%;
-                transition: all 0.3s ease;
-            ">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">🌐</div>
-                <h3 style="
-                    font-size: 1.5rem;
-                    font-weight: 700;
-                    color: hsl(210, 40%, 98%);
-                    margin-bottom: 0.75rem;
-                    font-family: 'Inter', sans-serif;
-                ">IPDR Analysis</h3>
-                <p style="
-                    color: hsl(215, 14%, 65%);
-                    font-size: 0.95rem;
-                    line-height: 1.6;
-                    margin-bottom: 1.5rem;
-                ">
-                    Internet Protocol Detail Record analysis with geographic mapping.
-                </p>
-                <ul style="
-                    color: hsl(215, 14%, 65%);
-                    font-size: 0.875rem;
-                    list-style: none;
-                    padding: 0;
-                    margin-bottom: 1.5rem;
-                ">
-                    <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="color: hsl(158, 100%, 50%); font-weight: 700;">✓</span>
-                        Traffic pattern detection
-                    </li>
-                    <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="color: hsl(158, 100%, 50%); font-weight: 700;">✓</span>
-                        Geographic visualization
-                    </li>
-                    <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="color: hsl(158, 100%, 50%); font-weight: 700;">✓</span>
-                        VPN/Proxy detection
-                    </li>
-                    <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="color: hsl(158, 100%, 50%); font-weight: 700;">✓</span>
-                        Social media tracking
-                    </li>
-                </ul>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        
-        ipdr_path = os.path.join(os.path.dirname(__file__), "cdr-and-ipdr", "IPDR_Analysis_Tool_v5.html")
-        if os.path.exists(ipdr_path):
-            if st.button("🚀 Launch IPDR Tool", key="ipdr_launch", use_container_width=True):
-                os.system(f'open "{ipdr_path}"')
-                st.success("✅ IPDR Analysis Tool opened in your browser!")
-        else:
-            st.warning("⚠️ IPDR tool not found. Please check installation.")
-    
-    with col3:
-        st.markdown(
-            """
-            <div style="
-                background: linear-gradient(135deg, hsl(215, 48%, 10%), hsl(212, 33%, 13%));
-                border: 1px solid hsl(215, 28%, 17%);
-                border-radius: 1rem;
-                padding: 2rem;
-                height: 100%;
-                transition: all 0.3s ease;
-            ">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">📂</div>
-                <h3 style="
-                    font-size: 1.5rem;
-                    font-weight: 700;
-                    color: hsl(210, 40%, 98%);
-                    margin-bottom: 0.75rem;
-                    font-family: 'Inter', sans-serif;
-                ">All Tools</h3>
-                <p style="
-                    color: hsl(215, 14%, 65%);
-                    font-size: 0.95rem;
-                    line-height: 1.6;
-                    margin-bottom: 1.5rem;
-                ">
-                    Access the complete toolkit with documentation and guides.
-                </p>
-                <ul style="
-                    color: hsl(215, 14%, 65%);
-                    font-size: 0.875rem;
-                    list-style: none;
-                    padding: 0;
-                    margin-bottom: 1.5rem;
-                ">
-                    <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="color: hsl(158, 100%, 50%); font-weight: 700;">✓</span>
-                        CDR & IPDR tools
-                    </li>
-                    <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="color: hsl(158, 100%, 50%); font-weight: 700;">✓</span>
-                        Documentation
-                    </li>
-                    <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="color: hsl(158, 100%, 50%); font-weight: 700;">✓</span>
-                        Quick start guides
-                    </li>
-                    <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="color: hsl(158, 100%, 50%); font-weight: 700;">✓</span>
-                        Sample data
-                    </li>
-                </ul>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        
-        index_path = os.path.join(os.path.dirname(__file__), "cdr-and-ipdr", "index.html")
-        if os.path.exists(index_path):
-            if st.button("🌐 Open Full Portal", key="portal_launch", use_container_width=True):
-                os.system(f'open "{index_path}"')
-                st.success("✅ Full portal opened in your browser!")
-        else:
-            st.warning("⚠️ Portal not found. Please check installation.")
-    
-    # Features Section
-    st.markdown("<br>", unsafe_allow_html=True)
-    section_header("✨ Key Features", "Advanced capabilities available in these tools")
-    
-    feat_col1, feat_col2, feat_col3 = st.columns(3)
-    
-    with feat_col1:
-        st.markdown(
-            """
-            <div style="
-                background: hsl(215, 48%, 10%);
-                border: 1px solid hsl(215, 28%, 17%);
-                border-radius: 0.75rem;
-                padding: 1.5rem;
-                margin-bottom: 1rem;
-            ">
-                <div style="font-size: 2rem; margin-bottom: 0.75rem;">📊</div>
-                <h4 style="color: hsl(210, 40%, 98%); margin-bottom: 0.5rem; font-family: 'Inter', sans-serif;">
-                    Data Analysis
-                </h4>
-                <p style="color: hsl(215, 14%, 65%); font-size: 0.875rem; line-height: 1.5;">
-                    Comprehensive analysis with automated pattern detection and statistical insights.
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    
-    with feat_col2:
-        st.markdown(
-            """
-            <div style="
-                background: hsl(215, 48%, 10%);
-                border: 1px solid hsl(215, 28%, 17%);
-                border-radius: 0.75rem;
-                padding: 1.5rem;
-                margin-bottom: 1rem;
-            ">
-                <div style="font-size: 2rem; margin-bottom: 0.75rem;">🗺️</div>
-                <h4 style="color: hsl(210, 40%, 98%); margin-bottom: 0.5rem; font-family: 'Inter', sans-serif;">
-                    Geographic Mapping
-                </h4>
-                <p style="color: hsl(215, 14%, 65%); font-size: 0.875rem; line-height: 1.5;">
-                    Interactive maps showing connection locations and movement patterns.
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    
-    with feat_col3:
-        st.markdown(
-            """
-            <div style="
-                background: hsl(215, 48%, 10%);
-                border: 1px solid hsl(215, 28%, 17%);
-                border-radius: 0.75rem;
-                padding: 1.5rem;
-                margin-bottom: 1rem;
-            ">
-                <div style="font-size: 2rem; margin-bottom: 0.75rem;">🔒</div>
-                <h4 style="color: hsl(210, 40%, 98%); margin-bottom: 0.5rem; font-family: 'Inter', sans-serif;">
-                    Privacy First
-                </h4>
-                <p style="color: hsl(215, 14%, 65%); font-size: 0.875rem; line-height: 1.5;">
-                    100% client-side processing - your data never leaves your machine.
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    
-    # Info Box
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.info("""
-    ℹ️ **How to Use These Tools:**
-    
-    1. Click the launch button for your desired tool
-    2. The tool will open in your default browser
-    3. Upload your CSV files directly in the tool
-    4. All analysis happens locally on your machine
-    5. Export reports when analysis is complete
-    
-    **No internet connection required** - these tools work completely offline!
-    """)
-    
-    # Documentation Links
-    st.markdown("<br>", unsafe_allow_html=True)
-    section_header("📖 Documentation & Support", "Learn more about using these tools")
-    
-    doc_col1, doc_col2, doc_col3 = st.columns(3)
-    
-    with doc_col1:
-        readme_path = os.path.join(os.path.dirname(__file__), "cdr-and-ipdr", "README.md")
-        if os.path.exists(readme_path):
-            if st.button("📄 Main Documentation", use_container_width=True):
-                os.system(f'open "{readme_path}"')
-    
-    with doc_col2:
-        quick_path = os.path.join(os.path.dirname(__file__), "cdr-and-ipdr", "QUICK_START.md")
-        if os.path.exists(quick_path):
-            if st.button("🚀 Quick Start Guide", use_container_width=True):
-                os.system(f'open "{quick_path}"')
-    
-    with doc_col3:
-        ipdr_readme_path = os.path.join(os.path.dirname(__file__), "cdr-and-ipdr", "IPDR_ANALYSIS_README.md")
-        if os.path.exists(ipdr_readme_path):
-            if st.button("📚 IPDR Guide", use_container_width=True):
-                os.system(f'open "{ipdr_readme_path}"')
-    
-    # Folder Access
-    st.markdown("<br>", unsafe_allow_html=True)
-    section_header("📁 Direct Access", "Open tools folder in Finder")
-    
-    cdr_folder = os.path.join(os.path.dirname(__file__), "cdr-and-ipdr")
-    if os.path.exists(cdr_folder):
-        if st.button("📂 Open Tools Folder", use_container_width=False):
-            os.system(f'open "{cdr_folder}"')
-            st.success(f"✅ Folder opened: {cdr_folder}")
+    if os.path.exists(ipdr_path):
+        with open(ipdr_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+        components.html(html_content, height=1200, scrolling=True)
     else:
-        st.error("""
-        ⚠️ **Tools folder not found!**
-        
-        Please make sure the `cdr-and-ipdr` folder is in the same directory as this application.
-        
-        Expected location: `{}`
-        """.format(cdr_folder))
+        st.error(f"❌ IPDR Analysis Tool not found at: {ipdr_path}")
+
+elif page == "📱 CDR Analysis Tool":
+    import os
+    import streamlit.components.v1 as components
+    
+    # Full page mode - hide everything including sidebar
+    st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    [data-testid="stSidebar"] {display: none;}
+    .main > div {padding: 0 !important;}
+    .block-container {
+        padding: 0 !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+    }
+    iframe {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw !important;
+        height: 100vh !important;
+        border: none !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    base_dir = os.path.abspath(os.path.dirname(__file__))
+    cdr_path = os.path.join(base_dir, "cdr-and-ipdr", "CDR_Analysis_Tool_v2.html")
+    
+    if os.path.exists(cdr_path):
+        with open(cdr_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+        components.html(html_content, height=1200, scrolling=True)
+    else:
+        st.error(f"❌ CDR Analysis Tool not found at: {cdr_path}")

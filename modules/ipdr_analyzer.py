@@ -13,30 +13,29 @@ IST = timedelta(hours=5, minutes=30)
 
 # Column name mappings (lowercase for case-insensitive matching)
 COLUMN_MAPPINGS = {
-    # Phone numbers
-    'phone': ['msisdn', 'phone_number', 'phone', 'subscriber_phone', 'mobile', 'mobile_number'],
-    'subscriber_name': ['subscriber_name', 'name', 'user_name', 'username'],
-    'subscriber_id': ['subscriber_id', 'sub_id', 'user_id', 'imsi'],
+    # Subscriber/User identification (IP-based, not phone-based)
+    'subscriber_id': ['subscriber_id', 'sub_id', 'user_id', 'session_id', 'subscriber', 'user'],
+    'subscriber_name': ['subscriber_name', 'name', 'user_name', 'username', 'subscriber', 'account_name'],
     
-    # IP addresses
-    'source_ip': ['source_ip', 'src_ip', 'source', 'src'],
-    'destination_ip': ['destination_ip', 'dest_ip', 'dst_ip', 'destination', 'dest', 'dst'],
-    'source_port': ['source_port', 'src_port'],
-    'destination_port': ['destination_port', 'dest_port', 'dst_port'],
+    # IP addresses (PRIMARY identifiers for IPDR)
+    'source_ip': ['source_ip', 'src_ip', 'source', 'src', 'source ip address', 'source ip', 'source_ip_address', 'sourceip', 'source address', 'source_address'],
+    'destination_ip': ['destination_ip', 'dest_ip', 'dst_ip', 'destination', 'dest', 'dst', 'destination ip address', 'destination ip', 'destination_ip_address', 'destip', 'destination address', 'destination_address'],
+    'source_port': ['source_port', 'src_port', 'source port', 'sport', 'sourceport'],
+    'destination_port': ['destination_port', 'dest_port', 'dst_port', 'destination port', 'dport', 'destport'],
     
     # Timestamp
     'timestamp': ['timestamp', 'session_start_time', 'start_time', 'datetime', 'date_time', 'date'],
     'session_end_time': ['session_end_time', 'end_time'],
     
     # Protocol
-    'protocol': ['protocol', 'app_protocol', 'l4_protocol', 'service_type'],
+    'protocol': ['protocol', 'app_protocol', 'l4_protocol', 'service_type', 'service type', 'record type', 'record_type'],
     
     # Data volume
-    'data_volume_bytes': ['total_bytes', 'data_volume_bytes', 'bytes', 'data_mb', 'upload_bytes', 'download_bytes'],
+    'data_volume_bytes': ['total_bytes', 'data_volume_bytes', 'bytes', 'data_mb', 'upload_bytes', 'download_bytes', 'bytes transferred', 'bytes_transferred', 'data volume', 'data_volume'],
     
     # Session info
     'session_id': ['session_id', 'session', 'sid'],
-    'duration': ['duration', 'session_duration_sec', 'session_duration_sec', 'duration_sec'],
+    'duration': ['duration', 'session_duration_sec', 'session_duration', 'session duration', 'session duration (sec)', 'duration_sec'],
     
     # Location
     'city': ['city', 'location', 'geo_city'],
@@ -85,7 +84,6 @@ def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df_normalized
 
 
-@st.cache_data(show_spinner=False)
 def load_and_validate(file_bytes: bytes, filename: str) -> tuple[pd.DataFrame | None, str]:
     """
     Load CSV from bytes with flexible validation.
@@ -104,36 +102,30 @@ def load_and_validate(file_bytes: bytes, filename: str) -> tuple[pd.DataFrame | 
     # Normalize column names
     df = normalize_columns(df)
     
-    # Check for MINIMUM required fields (at least one source and one destination identifier)
-    has_source = any(col in df.columns for col in ['source_ip', 'phone', 'subscriber_id'])
-    has_dest = any(col in df.columns for col in ['destination_ip'])
+    # Check for MINIMUM required fields (Source IP and Destination IP are must)
+    has_source_ip = 'source_ip' in df.columns
+    has_dest_ip = 'destination_ip' in df.columns
     
-    if not (has_source and has_dest):
+    if not (has_source_ip and has_dest_ip):
         return None, (
-            "The uploaded file must contain at least source and destination identifiers. "
-            "Expected columns like: Source_IP, Destination_IP or MSISDN/Phone"
+            "Invalid IPDR format. Required fields missing: Source_IP and Destination_IP. "
+            "Please ensure your file contains proper IPDR data with IP addresses."
         )
     
-    # === CREATE MISSING COLUMNS WITH DEFAULTS ===
+    # === CREATE MISSING COLUMNS WITH INTELLIGENT DEFAULTS ===
     
-    # Phone number (extract from MSISDN or Subscriber_ID)
-    if 'phone' not in df.columns:
-        if 'subscriber_id' in df.columns:
-            # Extract last 10 digits from subscriber_id
-            df['phone'] = df['subscriber_id'].astype(str).str.extract(r'(\d{10})$')[0]
-        else:
-            df['phone'] = 'UNKNOWN'
-    
-    # Subscriber ID
+    # Subscriber ID - Generate from filename for single file case
+    # (will be overridden in app.py for proper suspect labeling)
     if 'subscriber_id' not in df.columns:
-        if 'phone' in df.columns:
-            df['subscriber_id'] = 'SUB-' + df['phone'].astype(str)
-        else:
-            df['subscriber_id'] = 'SUB-UNKNOWN'
+        # Use a generic ID - app.py will handle proper labeling
+        # For now, use first source IP as identifier
+        first_source_ip = df['source_ip'].iloc[0] if len(df) > 0 else 'UNKNOWN'
+        df['subscriber_id'] = f"SUBJECT-{first_source_ip}".replace('.', '-')
     
-    # Subscriber name
+    # Subscriber Name - Use file identity
     if 'subscriber_name' not in df.columns:
-        df['subscriber_name'] = 'Suspect ' + df.get('phone', df.get('subscriber_id', 'Unknown')).astype(str)
+        # Default to "Subject" - will be overridden with proper name in app.py
+        df['subscriber_name'] = filename.replace('.csv', '').replace('_', ' ') if filename else "Subject"
     
     # Timestamp
     if 'timestamp' not in df.columns:
@@ -205,13 +197,19 @@ def load_and_validate(file_bytes: bytes, filename: str) -> tuple[pd.DataFrame | 
     
     # Parse timestamps → datetime
     try:
-        df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
+        # Check if timestamp column already exists and is datetime
+        if pd.api.types.is_datetime64_any_dtype(df['timestamp']):
+            # Already datetime, skip parsing
+            pass
+        else:
+            df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
+        
         # Drop rows with invalid timestamps
         df = df.dropna(subset=['timestamp'])
         if df.empty:
             return None, "No valid timestamps found in the file."
     except Exception as e:
-        return None, f"The 'timestamp' column could not be parsed: {e}"
+        return None, f"Timestamp parsing error: {str(e)}"
 
     # Coerce boolean columns
     bool_cols = ['is_foreign_ip', 'is_tor', 'is_vpn', 'is_proxy', 'is_off_hours', 'is_suspicious']
@@ -233,34 +231,56 @@ def load_and_validate(file_bytes: bytes, filename: str) -> tuple[pd.DataFrame | 
     df['data_volume_bytes'] = df['data_volume_bytes'].astype(int)
     df['duration'] = df['duration'].astype(int)
     
-    # === CREATE UPPERCASE ALIASES FOR BACKWARD COMPATIBILITY ===
-    # Many downstream functions expect uppercase column names
-    df['Subscriber_ID'] = df['subscriber_id']
-    df['Subscriber_Name'] = df['subscriber_name']
-    df['Phone_Number'] = df['phone']
-    df['Source_IP'] = df['source_ip']
-    df['Destination_IP'] = df['destination_ip']
-    df['Source_Port'] = df['source_port']
-    df['Destination_Port'] = df['destination_port']
-    df['Timestamp'] = df['timestamp']
-    df['App_Protocol'] = df['protocol']
-    df['Data_Volume_Bytes'] = df['data_volume_bytes']
-    df['Session_Duration_sec'] = df['duration']
-    df['ISP'] = df['isp']
-    df['City'] = df['city']
-    df['Latitude'] = df['latitude']
-    df['Longitude'] = df['longitude']
-    df['Is_TOR'] = df['is_tor']
-    df['Is_Foreign_IP'] = df['is_foreign_ip']
-    df['Is_Off_Hours'] = df['is_off_hours']
-    df['Is_VPN_Suspected'] = df['is_vpn']
-
-    # Derive time-based columns (IST hour)
-    df['Hour_IST'] = df['Timestamp'].dt.hour
-    df['Date'] = df['Timestamp'].dt.date
-    df['DayOfWeek'] = df['Timestamp'].dt.day_name()
+    # NOTE: Uppercase aliases are NOT created here to avoid duplicate column errors
+    # when concatenating multiple dataframes. They will be created in app.py after concat.
+    # The dataframe is returned with only lowercase column names.
 
     return df, ""
+
+
+def add_uppercase_aliases(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add uppercase column aliases for backward compatibility.
+    Should be called AFTER concatenating multiple dataframes to avoid duplicate column errors.
+    """
+    df = df.copy()
+    
+    # Uppercase alias mapping
+    alias_mapping = {
+        'subscriber_id': 'Subscriber_ID',
+        'subscriber_name': 'Subscriber_Name',
+        'source_ip': 'Source_IP',
+        'destination_ip': 'Destination_IP',
+        'source_port': 'Source_Port',
+        'destination_port': 'Destination_Port',
+        'timestamp': 'Timestamp',
+        'protocol': 'App_Protocol',
+        'data_volume_bytes': 'Data_Volume_Bytes',
+        'duration': 'Session_Duration_sec',
+        'isp': 'ISP',
+        'city': 'City',
+        'latitude': 'Latitude',
+        'longitude': 'Longitude',
+        'is_tor': 'Is_TOR',
+        'is_foreign_ip': 'Is_Foreign_IP',
+        'is_off_hours': 'Is_Off_Hours',
+        'is_vpn': 'Is_VPN_Suspected'
+    }
+    
+    # Create aliases only if they don't already exist
+    for lower_name, upper_name in alias_mapping.items():
+        if lower_name in df.columns and upper_name not in df.columns:
+            df[upper_name] = df[lower_name]
+    
+    # Derive time-based columns (IST hour) - only if not already present
+    if 'Hour_IST' not in df.columns and 'timestamp' in df.columns:
+        df['Hour_IST'] = df['timestamp'].dt.hour
+    if 'Date' not in df.columns and 'timestamp' in df.columns:
+        df['Date'] = df['timestamp'].dt.date
+    if 'DayOfWeek' not in df.columns and 'timestamp' in df.columns:
+        df['DayOfWeek'] = df['timestamp'].dt.day_name()
+    
+    return df
 
 
 @st.cache_data(show_spinner=False)

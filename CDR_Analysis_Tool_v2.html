@@ -1,0 +1,2003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suराग - CDR Analysis | Cyber Investigation Platform</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Exo+2:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#070a0f; --bg2:#0b1118; --bg3:#101820;
+  --border:#1a3050; --acc:#ff6b00; --acc2:#ffaa00;
+  --acc3:#00e5ff; --acc4:#ff3366; --green:#00ff88;
+  --text:#e8edf5; --muted:#5a7a99;
+  --font-h:'Orbitron',sans-serif;
+  --font-b:'Exo 2',sans-serif;
+  --font-m:'Share Tech Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,107,0,0.01) 3px,rgba(255,107,0,0.01) 4px);pointer-events:none;z-index:9999;}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#07090e,#0f1a28,#07090e);border-bottom:2px solid var(--acc);height:64px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1000;box-shadow:0 4px 30px rgba(255,107,0,0.2);}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-ico{width:42px;height:42px;border:2px solid var(--acc);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 0 20px rgba(255,107,0,0.5);animation:pulse 3s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 15px rgba(255,107,0,0.4);}50%{box-shadow:0 0 35px rgba(255,107,0,0.9);}}
+.logo h1{font-family:var(--font-h);font-size:18px;font-weight:700;letter-spacing:3px;color:var(--acc);text-shadow:0 0 20px rgba(255,107,0,0.6);}
+.logo span{font-family:var(--font-m);font-size:9px;color:var(--muted);letter-spacing:2px;}
+.hdr-r{display:flex;align-items:center;gap:10px;}
+.live-badge{display:flex;align-items:center;gap:6px;font-family:var(--font-m);font-size:10px;color:var(--muted);}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:blink 1.5s infinite;box-shadow:0 0 8px var(--green);}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.2;}}
+#clk{font-family:var(--font-m);font-size:11px;color:var(--acc);letter-spacing:1px;}
+
+/* NAV */
+.nav{display:flex;gap:1px;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;overflow-x:auto;}
+.ntab{padding:12px 18px;font-family:var(--font-h);font-size:10px;font-weight:600;letter-spacing:2px;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.3s;white-space:nowrap;text-transform:uppercase;background:none;border-top:none;border-left:none;border-right:none;}
+.ntab:hover{color:var(--text);}
+.ntab.active{color:var(--acc);border-bottom-color:var(--acc);background:rgba(255,107,0,0.06);text-shadow:0 0 12px rgba(255,107,0,0.5);}
+
+/* MAIN */
+.main{padding:18px;}
+.tc{display:none;}.tc.active{display:block;}
+
+/* UPLOAD */
+.upz{border:2px dashed var(--border);border-radius:12px;padding:44px;text-align:center;cursor:pointer;background:linear-gradient(135deg,rgba(255,107,0,0.02),rgba(255,107,0,0.05));transition:all 0.3s;margin-bottom:18px;}
+.upz:hover,.upz.drag{border-color:var(--acc);background:rgba(255,107,0,0.1);box-shadow:0 0 30px rgba(255,107,0,0.2);}
+.upz h2{font-family:var(--font-h);font-size:16px;letter-spacing:3px;color:var(--acc);margin-bottom:8px;}
+.upz p{color:var(--muted);font-size:11px;margin-bottom:14px;}
+
+/* BUTTONS */
+.btn{padding:8px 18px;border:none;border-radius:6px;font-family:var(--font-h);font-size:10px;font-weight:600;letter-spacing:2px;cursor:pointer;transition:all 0.3s;text-transform:uppercase;}
+.btn-o{background:linear-gradient(135deg,#cc4400,#ff6b00);color:#fff;box-shadow:0 4px 15px rgba(255,107,0,0.3);}
+.btn-o:hover{box-shadow:0 6px 25px rgba(255,107,0,0.55);transform:translateY(-1px);}
+.btn-b{background:linear-gradient(135deg,#003399,#0066ff);color:#fff;}
+.btn-g{background:linear-gradient(135deg,#004d1a,#00ff88);color:#000;}
+.btn-r{background:linear-gradient(135deg,#880011,#ff3366);color:#fff;}
+.btn-y{background:linear-gradient(135deg,#775500,#ffaa00);color:#000;}
+.btn-sm{padding:5px 12px;font-size:9px;}
+
+/* STATS */
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:18px;}
+.sc{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px;position:relative;overflow:hidden;transition:all 0.3s;cursor:default;}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.sc.o::before{background:linear-gradient(90deg,#cc4400,#ff6b00);}
+.sc.b::before{background:linear-gradient(90deg,#0044cc,#00e5ff);}
+.sc.g::before{background:linear-gradient(90deg,#004d1a,#00ff88);}
+.sc.r::before{background:linear-gradient(90deg,#880011,#ff3366);}
+.sc.y::before{background:linear-gradient(90deg,#775500,#ffaa00);}
+.sc.p::before{background:linear-gradient(90deg,#440099,#aa00ff);}
+.sc:hover{border-color:var(--acc);box-shadow:0 4px 20px rgba(255,107,0,0.15);transform:translateY(-2px);}
+.sc-ico{font-size:24px;margin-bottom:8px;}
+.sc-val{font-family:var(--font-m);font-size:24px;font-weight:700;color:var(--acc);margin-bottom:2px;}
+.sc-lbl{font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+
+/* CARD */
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.ct{font-family:var(--font-h);font-size:11px;font-weight:600;letter-spacing:3px;color:var(--acc);text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+
+/* TABLE */
+.tw{overflow:auto;border-radius:8px;border:1px solid var(--border);}
+.tw::-webkit-scrollbar{width:4px;height:4px;}
+.tw::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+table.dt{width:100%;border-collapse:collapse;font-family:var(--font-m);font-size:11px;}
+table.dt th{background:rgba(255,107,0,0.1);color:var(--acc);padding:8px 10px;text-align:left;font-family:var(--font-h);font-size:9px;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid var(--border);white-space:nowrap;}
+table.dt td{padding:7px 10px;border-bottom:1px solid rgba(26,48,80,0.35);color:var(--text);}
+table.dt tr:hover td{background:rgba(255,107,0,0.04);}
+table.dt tr:nth-child(even) td{background:rgba(11,17,24,0.5);}
+
+/* BADGES */
+.b{display:inline-block;padding:2px 7px;border-radius:3px;font-size:9px;font-family:var(--font-m);font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+.br{background:rgba(255,51,102,0.15);color:#ff3366;border:1px solid rgba(255,51,102,0.3);}
+.by{background:rgba(255,170,0,0.15);color:#ffaa00;border:1px solid rgba(255,170,0,0.3);}
+.bg{background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.3);}
+.bb{background:rgba(0,229,255,0.1);color:#00e5ff;border:1px solid rgba(0,229,255,0.3);}
+.bo{background:rgba(255,107,0,0.15);color:#ff6b00;border:1px solid rgba(255,107,0,0.3);}
+.bp{background:rgba(170,0,255,0.15);color:#aa00ff;border:1px solid rgba(170,0,255,0.3);}
+
+/* FILTER BAR */
+.fb{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:16px;}
+.fb label{font-family:var(--font-m);font-size:9px;color:var(--muted);letter-spacing:1px;white-space:nowrap;}
+.fb select,.fb input[type=text],.fb input[type=date],.fb input[type=number]{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:5px 9px;border-radius:4px;font-family:var(--font-m);font-size:11px;outline:none;}
+.fb select:focus,.fb input:focus{border-color:var(--acc);box-shadow:0 0 6px rgba(255,107,0,0.2);}
+
+/* CHART GRID */
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+@media(max-width:800px){.cg{grid-template-columns:1fr;}}
+.cc{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px;}
+.cc canvas{max-height:240px;}
+
+/* MAP */
+#towerMap{height:500px;border-radius:10px;border:1px solid var(--border);background:#090d14;}
+.map-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-family:var(--font-m);font-size:10px;color:var(--muted);}
+
+/* NETWORK */
+#netWrap{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px;}
+#netCanvas{display:block;width:100%;height:520px;cursor:grab;}
+#netCanvas:active{cursor:grabbing;}
+#netTooltip{position:absolute;background:rgba(10,15,22,0.97);border:1px solid var(--acc);border-radius:8px;padding:12px 14px;font-family:var(--font-m);font-size:11px;color:var(--text);pointer-events:none;display:none;max-width:220px;z-index:100;box-shadow:0 4px 20px rgba(255,107,0,0.3);}
+#netTimeSlider{width:100%;margin-top:10px;accent-color:var(--acc);}
+
+/* CONTACT CARDS */
+.con-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:16px;}
+.con-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;transition:all 0.3s;position:relative;overflow:hidden;cursor:pointer;}
+.con-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.con-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(255,107,0,0.15);}
+
+/* HEATMAP */
+.hm-wrap{overflow-x:auto;padding:8px 0;}
+.hm-grid{display:grid;gap:3px;}
+.hm-cell{border-radius:3px;min-height:18px;transition:all 0.15s;cursor:default;position:relative;}
+.hm-cell:hover{transform:scale(1.5);z-index:10;}
+
+/* LOADING */
+.lov{display:none;position:fixed;inset:0;background:rgba(7,10,15,0.93);z-index:9998;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+.lov.show{display:flex;}
+.lspin{width:55px;height:55px;border:3px solid var(--border);border-top-color:var(--acc);border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ltxt{font-family:var(--font-m);font-size:12px;color:var(--acc);letter-spacing:3px;}
+
+/* NOTICE */
+.notice{background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.2);border-left:4px solid var(--acc3);border-radius:8px;padding:10px 14px;font-family:var(--font-m);font-size:11px;color:#7aa8cc;margin-bottom:14px;}
+
+/* ALERT BOX */
+.abox{background:rgba(255,51,102,0.06);border:1px solid rgba(255,51,102,0.2);border-left:4px solid #ff3366;border-radius:8px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px;}
+.abox.y{background:rgba(255,170,0,0.06);border-color:rgba(255,170,0,0.2);border-left-color:#ffaa00;}
+.abox.bl{background:rgba(0,229,255,0.05);border-color:rgba(0,229,255,0.15);border-left-color:#00e5ff;}
+.abox-ico{font-size:20px;padding-top:2px;}
+.abox-body{flex:1;}
+.abox-title{font-family:var(--font-h);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:3px;}
+.abox-detail{font-family:var(--font-m);font-size:10px;color:#7aa8cc;line-height:1.6;}
+.abox-action{font-size:9px;color:var(--green);font-family:var(--font-m);margin-top:4px;}
+
+/* SECTION TITLE */
+.st{font-family:var(--font-h);font-size:12px;font-weight:700;letter-spacing:3px;color:var(--acc);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px;}
+.st::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent);}
+
+/* COLUMN MAPPER */
+.cmap{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.cmap-item label{display:block;font-family:var(--font-m);font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:4px;text-transform:uppercase;}
+.cmap-item select{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 9px;border-radius:4px;font-family:var(--font-m);font-size:10px;outline:none;}
+.cmap-item select:focus{border-color:var(--acc);}
+
+/* CALL TIMELINE ROW */
+.trow-out{color:#ff8844;}
+.trow-in{color:#00ff88;}
+.trow-mis{color:#ff3366;}
+.trow-sms{color:#00e5ff;}
+
+/* INFO CHIPS */
+.chip{display:inline-flex;align-items:center;gap:4px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-family:var(--font-m);font-size:10px;color:var(--muted);margin:2px;}
+
+@media print{
+  .nav,.hdr,.btn,.fb,.upz,.lov{display:none!important;}
+  body{background:#fff;color:#000;}body::before{display:none;}
+  .tc{display:block!important;}
+  #tab-db,#tab-con,#tab-net,#tab-map,#tab-tl,#tab-hab,#tab-raw{display:none!important;}
+  #tab-rep{display:block!important;}
+  @page{margin:0;size:A4;}
+}
+</style>
+</head>
+<body>
+
+<div class="lov" id="lov"><div class="lspin"></div><div class="ltxt" id="ltxt">PROCESSING...</div></div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="logo">
+    <div class="logo-ico">🔍</div>
+    <div>
+      <h1>Suराग - CDR ANALYSIS</h1>
+      <span>CYBER INVESTIGATION PLATFORM</span>
+      <span>CALL DETAIL RECORD INVESTIGATION — CYBER POLICE</span>
+    </div>
+  </div>
+  <div class="hdr-r">
+    <div class="live-badge"><div class="dot"></div>LIVE</div>
+    <div id="clk">--:--:--</div>
+    <button class="btn btn-o btn-sm" onclick="generateReport();openTab('rep',7)">📑 REPORT</button>
+    <button class="btn btn-g btn-sm" onclick="window.print()">🖨️ PDF</button>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <button class="ntab active" onclick="openTab('db',0)">📊 Dashboard</button>
+  <button class="ntab" onclick="openTab('con',1)">👥 Contacts</button>
+  <button class="ntab" onclick="openTab('net',2)">🕸️ Network</button>
+  <button class="ntab" onclick="openTab('map',3)">🗺️ Tower Map</button>
+  <button class="ntab" onclick="openTab('tl',4)">📈 Timeline</button>
+  <button class="ntab" onclick="openTab('hab',5)">🕐 Habits</button>
+  <button class="ntab" onclick="openTab('raw',6)">📋 Calls Log</button>
+  <button class="ntab" onclick="openTab('rep',7)">📑 PDF Report</button>
+</div>
+
+<div class="main">
+
+<!-- =========== DASHBOARD =========== -->
+<div class="tc active" id="tab-db">
+  <div class="upz" id="upz" onclick="document.getElementById('fi').click()">
+    <div style="font-size:50px;margin-bottom:12px;">📂</div>
+    <h2>CDR FILE UPLOAD KARO</h2>
+    <p>CSV ya Excel (.xlsx) drag & drop karo ya click karo | Auto column detection</p>
+    <button class="btn btn-o" type="button">📂 SELECT FILE</button>
+    <input type="file" id="fi" accept=".csv,.xlsx,.xls" onchange="handleUpload(event)" style="display:none">
+    <div style="margin-top:12px;">
+      <button class="btn btn-y" type="button" onclick="event.stopPropagation();loadDemo()">🧪 DEMO DATA (30 Days)</button>
+    </div>
+  </div>
+
+  <div id="colMapperBox" style="display:none;" class="card">
+    <div class="ch">
+      <div class="ct">⚙️ COLUMN MAPPING — Columns select karo</div>
+      <button class="btn btn-o btn-sm" onclick="processData()">▶ ANALYSE KARO</button>
+    </div>
+    <div class="cmap" id="cmapGrid"></div>
+    <div id="previewBox" style="display:none;margin-top:10px;">
+      <div style="font-family:var(--font-m);font-size:10px;color:var(--muted);margin-bottom:6px;">PREVIEW (first 3 rows):</div>
+      <div class="tw" style="max-height:100px;font-size:10px;" id="previewTbl"></div>
+    </div>
+  </div>
+
+  <div class="sg" id="statsGrid"></div>
+
+  <div id="suspectInfo" style="display:none;" class="card" style="margin-bottom:16px;">
+    <div class="ch"><div class="ct">🎯 SUSPECT / MAIN NUMBER DETECTED</div></div>
+    <div id="suspectInfoBody"></div>
+  </div>
+
+  <div class="cg" id="dashCharts" style="display:none;">
+    <div class="cc">
+      <div class="ct" style="margin-bottom:10px;">📊 TOP 12 CONTACTS</div>
+      <canvas id="c_topContacts"></canvas>
+    </div>
+    <div class="cc">
+      <div class="ct" style="margin-bottom:10px;">📡 CALL TYPE & DIRECTION</div>
+      <canvas id="c_callType"></canvas>
+    </div>
+  </div>
+
+  <div id="topTable" style="display:none;">
+    <div class="st">🎯 TOP CONTACTS SUMMARY</div>
+    <div class="tw" style="max-height:340px;">
+      <table class="dt">
+        <thead><tr>
+          <th>#</th><th>Number</th><th>Relation</th><th>Type</th>
+          <th>📞 Calls</th><th>💬 SMS</th><th>📵 Missed</th>
+          <th>⬆️ Out</th><th>⬇️ In</th><th>⏱️ Duration</th>
+          <th>🌙 Night</th><th>Last Contact</th>
+        </tr></thead>
+        <tbody id="topTbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- =========== CONTACTS =========== -->
+<div class="tc" id="tab-con">
+
+  <!-- HOW TO IDENTIFY guide -->
+  <div style="background:rgba(0,229,255,0.04);border:1px solid rgba(0,229,255,0.15);border-radius:10px;padding:14px 18px;margin-bottom:14px;">
+    <div style="font-family:var(--font-h);font-size:10px;color:var(--acc3);letter-spacing:2px;margin-bottom:10px;">📌 CONTACT TYPE KAISE PATA CHALTA HAI?</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;font-family:var(--font-m);font-size:10px;">
+      <div style="background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.2);border-radius:6px;padding:8px;">
+        <div style="color:#00ff88;font-weight:700;margin-bottom:3px;">👨‍👩‍👧 FAMILY</div>
+        <div style="color:var(--muted);">Contact Label mein: wife, husband, brother, bhai, father, mother, papa, mama, son, daughter, beta, beti, sister, behan, uncle, aunty, dada, nani likhna hoga</div>
+      </div>
+      <div style="background:rgba(255,107,0,0.08);border:1px solid rgba(255,107,0,0.2);border-radius:6px;padding:8px;">
+        <div style="color:#ff6b00;font-weight:700;margin-bottom:3px;">🤝 ASSOCIATE</div>
+        <div style="color:var(--muted);">Label mein: associate, partner, colleague, friend, dost, yaar likhna hoga</div>
+      </div>
+      <div style="background:rgba(255,51,102,0.08);border:1px solid rgba(255,51,102,0.2);border-radius:6px;padding:8px;">
+        <div style="color:#ff3366;font-weight:700;margin-bottom:3px;">🚨 SUSPICIOUS</div>
+        <div style="color:var(--muted);">Label mein: suspicious, pk contact, threat, enemy likhna hoga</div>
+      </div>
+      <div style="background:rgba(170,0,255,0.08);border:1px solid rgba(170,0,255,0.2);border-radius:6px;padding:8px;">
+        <div style="color:#aa00ff;font-weight:700;margin-bottom:3px;">🔥 BURNER</div>
+        <div style="color:var(--muted);">Label mein: burner likhna hoga. Ya CDR mein Contact_Label column hoga to auto-detect hoga</div>
+      </div>
+    </div>
+  </div>
+  <div class="fb">
+    <label>SEARCH:</label>
+    <input type="text" id="cs_search" placeholder="Number / Name..." oninput="renderContacts()" style="width:160px;">
+    <label>TYPE:</label>
+    <select id="cs_type" onchange="renderContacts()">
+      <option value="">All</option>
+      <option value="associate">🤝 Associate</option>
+      <option value="family">👨‍👩‍👧 Family</option>
+      <option value="suspicious">🚨 Suspicious</option>
+      <option value="burner">🔥 Burner</option>
+      <option value="victim">⚠️ Victim</option>
+      <option value="unknown">❓ Unknown</option>
+    </select>
+    <label>SORT:</label>
+    <select id="cs_sort" onchange="renderContacts()">
+      <option value="total">Total Calls</option>
+      <option value="dur">Duration</option>
+      <option value="night">Night Calls</option>
+      <option value="missed">Missed</option>
+      <option value="last">Last Contact</option>
+    </select>
+    <label>MIN CALLS:</label>
+    <input type="number" id="cs_min" value="1" style="width:55px;" oninput="renderContacts()">
+    <button class="btn btn-r btn-sm" onclick="resetConFilters()">✕</button>
+    <span id="cs_count" style="font-family:var(--font-m);font-size:10px;color:var(--muted);"></span>
+  </div>
+  <div class="con-grid" id="conGrid"></div>
+  <div class="st">📋 DETAIL TABLE</div>
+  <div class="tw" style="max-height:380px;">
+    <table class="dt">
+      <thead><tr>
+        <th>#</th><th>Number</th><th>Relation</th><th>Type</th>
+        <th>Out</th><th>In</th><th>Missed</th><th>SMS</th>
+        <th>Total</th><th>Duration</th><th>Night</th>
+        <th>First Call</th><th>Last Call</th><th>Status</th>
+      </tr></thead>
+      <tbody id="conTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- =========== NETWORK =========== -->
+<div class="tc" id="tab-net">
+  <div class="notice" id="netNotice">
+    📌 Node ka size = call frequency. Line thickness = connection strength. 
+    <b>Click</b> node pe details dekhne ke liye. <b>Drag</b> karke move karo.
+    Orange = Suspect, Rang = Relation type.
+  </div>
+
+  <!-- Network Controls -->
+  <div class="fb">
+    <label>MIN CALLS:</label>
+    <input type="number" id="net_min" value="2" style="width:55px;" oninput="drawNet()">
+    <label>DATE FROM:</label>
+    <input type="date" id="net_from" onchange="drawNet()">
+    <label>TO:</label>
+    <input type="date" id="net_to" onchange="drawNet()">
+    <label>TYPE:</label>
+    <select id="net_type" onchange="drawNet()">
+      <option value="all">All</option>
+      <option value="Call">Calls</option>
+      <option value="SMS">SMS</option>
+    </select>
+    <label>HOUR:</label>
+    <select id="net_hour" onchange="drawNet()">
+      <option value="">All Hours</option>
+      <option value="night">Night (11PM-6AM)</option>
+      <option value="day">Day (6AM-11PM)</option>
+    </select>
+    <button class="btn btn-o btn-sm" onclick="drawNet()">🔄 REDRAW</button>
+    <button class="btn btn-b btn-sm" onclick="autoLayout()">⊞ AUTO LAYOUT</button>
+    <span id="netStats" style="font-family:var(--font-m);font-size:10px;color:var(--muted);"></span>
+  </div>
+
+  <div id="netWrap">
+    <canvas id="netCanvas"></canvas>
+    <div id="netTooltip"></div>
+  </div>
+
+  <!-- Network Legend -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:14px;">
+    <div class="chip">🎯 Suspect (Center)</div>
+    <div class="chip" style="color:#ff6b00;">🤝 Associate</div>
+    <div class="chip" style="color:#00ff88;">👨‍👩‍👧 Family</div>
+    <div class="chip" style="color:#ff3366;">🚨 Suspicious</div>
+    <div class="chip" style="color:#aa00ff;">🔥 Burner Phone</div>
+    <div class="chip" style="color:#ffaa00;">⚠️ Victim</div>
+    <div class="chip" style="color:#00e5ff;">❓ Unknown</div>
+  </div>
+
+  <!-- Selected node details -->
+  <div id="netNodeDetail" style="display:none;" class="card">
+    <div class="ch"><div class="ct" id="netNodeTitle">NODE DETAILS</div></div>
+    <div id="netNodeBody"></div>
+  </div>
+
+  <!-- Network Call Log -->
+  <div id="netCallLogBox" style="display:none;">
+    <div class="st" id="netCallLogTitle">CALLS WITH THIS CONTACT</div>
+    <div class="tw" style="max-height:280px;">
+      <table class="dt">
+        <thead><tr><th>Date/Time</th><th>Type</th><th>Direction</th><th>Duration</th><th>Tower</th></tr></thead>
+        <tbody id="netCallLog"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- =========== TOWER MAP =========== -->
+<div class="tc" id="tab-map">
+  <div class="fb">
+    <label>TIME:</label>
+    <select id="mf_time" onchange="renderMap()">
+      <option value="all">All Data</option>
+      <option value="1d">Last 1 Day</option>
+      <option value="7d">Last 7 Days</option>
+      <option value="30d">Last 30 Days</option>
+    </select>
+    <label>DATE:</label>
+    <input type="date" id="mf_date" onchange="renderMap()">
+    <label>TYPE:</label>
+    <select id="mf_type" onchange="renderMap()">
+      <option value="all">All</option>
+      <option value="Call">Call</option>
+      <option value="SMS">SMS</option>
+      <option value="Missed">Missed</option>
+    </select>
+    <label>DIRECTION:</label>
+    <select id="mf_dir" onchange="renderMap()">
+      <option value="all">All</option>
+      <option value="Outgoing">Outgoing</option>
+      <option value="Incoming">Incoming</option>
+      <option value="Missed">Missed</option>
+    </select>
+    <label>CONTACT:</label>
+    <input type="text" id="mf_num" placeholder="Number..." oninput="renderMap()" style="width:120px;">
+    <button class="btn btn-o btn-sm" onclick="renderMap()">📍 UPDATE MAP</button>
+    <button class="btn btn-y btn-sm" onclick="fitMap()">⊞ FIT VIEW</button>
+    <button class="btn btn-r btn-sm" id="trailBtn" onclick="toggleTrail()">🔗 TRAIL</button>
+  </div>
+  <div class="notice" id="mapNotice">⚠️ Please upload CDR file from Dashboard tab first to view tower locations on map.</div>
+  <div id="towerMap"></div>
+  <div class="map-legend">
+    <span>🏠 Home Location</span><span>🏢 Work/Office</span>
+    <span>🚨 Suspicious Activity</span><span>🎯 Crime Scene</span>
+    <span>🚌 Transit/Movement</span><span>📡 Cell Tower</span>
+  </div>
+
+  <!-- Map Stats -->
+  <div class="sg" id="mapStats" style="margin-top:14px;"></div>
+
+  <!-- Tower Table -->
+  <div class="st" style="margin-top:4px;">📡 CELL TOWER ANALYSIS</div>
+  <div class="tw" style="max-height:280px;">
+    <table class="dt">
+      <thead><tr><th>Tower ID</th><th>Location</th><th>Type</th><th>Calls</th><th>SMS</th><th>Missed</th><th>First Seen</th><th>Last Seen</th></tr></thead>
+      <tbody id="towerTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- =========== TIMELINE =========== -->
+<div class="tc" id="tab-tl">
+  <div class="fb">
+    <label>VIEW:</label>
+    <select id="tl_view" onchange="renderTimeline()">
+      <option value="day">Daily</option>
+      <option value="hour">Hourly</option>
+      <option value="week">Weekly</option>
+      <option value="month">Monthly</option>
+    </select>
+    <label>PERIOD:</label>
+    <select id="tl_period" onchange="renderTimeline()">
+      <option value="all">All Data</option>
+      <option value="1d">Last 1 Day</option>
+      <option value="7d">Last 7 Days</option>
+      <option value="30d">Last 30 Days</option>
+    </select>
+    <label>CONTACT:</label>
+    <select id="tl_contact" onchange="renderTimeline()"><option value="">All</option></select>
+    <label>TYPE:</label>
+    <select id="tl_type" onchange="renderTimeline()">
+      <option value="all">All</option>
+      <option value="Call">Calls</option>
+      <option value="SMS">SMS</option>
+      <option value="Missed">Missed</option>
+    </select>
+    <button class="btn btn-o btn-sm" onclick="renderTimeline()">📈 UPDATE</button>
+  </div>
+  <div class="cg">
+    <div class="cc" style="grid-column:span 2">
+      <div class="ct" style="margin-bottom:10px;">📈 CALLS / SMS / MISSED — TIMELINE</div>
+      <canvas id="c_tl" style="max-height:260px;"></canvas>
+    </div>
+  </div>
+  <div class="cg">
+    <div class="cc">
+      <div class="ct" style="margin-bottom:10px;">⏱️ CALL DURATION TREND (minutes)</div>
+      <canvas id="c_dur"></canvas>
+    </div>
+    <div class="cc">
+      <div class="ct" style="margin-bottom:10px;">🥧 CALL TYPE BREAKDOWN</div>
+      <canvas id="c_split"></canvas>
+    </div>
+  </div>
+  <div class="sg" id="tlStats"></div>
+</div>
+
+<!-- =========== HABITS =========== -->
+<div class="tc" id="tab-hab">
+  <div class="sg" id="habStats"></div>
+  <div class="card">
+    <div class="ch"><div class="ct">🔥 HEATMAP — Day × Hour (Call Activity)</div>
+      <div style="display:flex;gap:8px;font-size:10px;font-family:var(--font-m);align-items:center;">
+        <span style="color:rgba(0,100,0,0.5);">▪ Low</span>
+        <div style="width:60px;height:8px;border-radius:2px;background:linear-gradient(90deg,rgba(20,50,20,0.3),#ff6b00);"></div>
+        <span style="color:#ff6b00;">▪ High</span>
+      </div>
+    </div>
+    <div class="hm-wrap"><div id="hmapDiv"></div></div>
+  </div>
+  <div class="cg">
+    <div class="cc">
+      <div class="ct" style="margin-bottom:10px;">⏰ HOURLY ACTIVITY</div>
+      <canvas id="c_hour"></canvas>
+    </div>
+    <div class="cc">
+      <div class="ct" style="margin-bottom:10px;">📅 DAY OF WEEK</div>
+      <canvas id="c_dow"></canvas>
+    </div>
+  </div>
+  <div class="st">🚨 BEHAVIORAL ALERTS</div>
+  <div id="habAlerts"></div>
+</div>
+
+<!-- =========== CALLS LOG =========== -->
+<div class="tc" id="tab-raw">
+  <div class="fb">
+    <label>NUMBER:</label>
+    <input type="text" id="raw_num" placeholder="9876..." oninput="filterRaw()" style="width:130px;">
+    <label>TYPE:</label>
+    <select id="raw_type" onchange="filterRaw()">
+      <option value="">All Types</option>
+      <option value="Call">📞 Call</option>
+      <option value="SMS">💬 SMS</option>
+    </select>
+    <label>DIRECTION:</label>
+    <select id="raw_dir" onchange="filterRaw()">
+      <option value="">All</option>
+      <option value="Outgoing">⬆️ Outgoing</option>
+      <option value="Incoming">⬇️ Incoming</option>
+      <option value="Missed">📵 Missed</option>
+    </select>
+    <label>FROM:</label><input type="date" id="raw_from" onchange="filterRaw()">
+    <label>TO:</label><input type="date" id="raw_to" onchange="filterRaw()">
+    <label>HOUR:</label>
+    <select id="raw_hour" onchange="filterRaw()">
+      <option value="">All Hours</option>
+      <option value="night">🌙 Night (11PM-6AM)</option>
+      <option value="morning">🌅 Morning (6AM-12PM)</option>
+      <option value="afternoon">☀️ Afternoon (12PM-6PM)</option>
+      <option value="evening">🌆 Evening (6PM-11PM)</option>
+    </select>
+    <button class="btn btn-r btn-sm" onclick="clearRaw()">✕ CLEAR</button>
+    <span id="rawCount" style="font-family:var(--font-m);font-size:10px;color:var(--muted);"></span>
+  </div>
+
+  <!-- Quick stats for filtered data -->
+  <div id="rawQuickStats" class="sg" style="margin-bottom:14px;"></div>
+
+  <div class="tw" style="max-height:520px;">
+    <table class="dt">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>📅 Date &amp; Time</th>
+          <th>📞 From</th>
+          <th>📞 To</th>
+          <th>Type</th>
+          <th>Direction</th>
+          <th>⏱️ Duration</th>
+          <th>📡 Tower</th>
+          <th>📍 Location</th>
+          <th>🏷️ Relation</th>
+          <th>Flag</th>
+        </tr>
+      </thead>
+      <tbody id="rawBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- =========== REPORT =========== -->
+<div class="tc" id="tab-rep">
+  <div class="fb">
+    <label>CASE:</label><input type="text" id="r_case" placeholder="CR/2024/001" style="width:130px;">
+    <label>OFFICER:</label><input type="text" id="r_officer" placeholder="SI Rajesh Kumar" style="width:160px;">
+    <label>STATION:</label><input type="text" id="r_station" placeholder="Cyber Crime Cell" style="width:160px;">
+    <label>SUSPECT NO:</label><input type="text" id="r_suspect" placeholder="9876543210" style="width:140px;">
+    <button class="btn btn-o" onclick="generateReport()">📑 GENERATE</button>
+    <button class="btn btn-g btn-sm" onclick="window.print()">🖨️ PRINT PDF</button>
+  </div>
+  <div id="repDiv"></div>
+</div>
+
+</div><!-- end main -->
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let raw=[], proc=[], cols=[];
+let cmap={datetime:'',calling:'',called:'',type:'',direction:'',duration:'',imei:'',tower:'',towerName:'',towerType:'',lat:'',lon:'',label:''};
+let chts={}, isLoaded=false;
+let tMap=null, tMarkers=[], tPolyline=null, trailOn=false;
+let SUSPECT='';
+let netNodes=[], netEdges=[], dragNode=null, isDrag=false, dragOff={x:0,y:0};
+let selectedNode=null;
+
+// Clock
+setInterval(()=>{document.getElementById('clk').textContent=new Date().toLocaleTimeString('en-IN');},1000);
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+function openTab(id, idx){
+  document.querySelectorAll('.tc').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  document.querySelectorAll('.ntab')[idx].classList.add('active');
+  if(id==='map'&&isLoaded) initMap();
+  if(id==='net'&&isLoaded) drawNet();
+  if(id==='tl'&&isLoaded) renderTimeline();
+  if(id==='hab'&&isLoaded) renderHabits();
+  if(id==='con'&&isLoaded) renderContacts();
+  if(id==='raw'&&isLoaded) filterRaw();
+}
+
+// ============================================================
+// UPLOAD & FILE PARSE
+// ============================================================
+const upz=document.getElementById('upz');
+upz.addEventListener('dragover',e=>{e.preventDefault();upz.classList.add('drag');});
+upz.addEventListener('dragleave',()=>upz.classList.remove('drag'));
+upz.addEventListener('drop',e=>{e.preventDefault();upz.classList.remove('drag');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
+function handleUpload(e){if(e.target.files[0])loadFile(e.target.files[0]);}
+
+function loadFile(file){
+  showL('FILE LOAD HO RAHI HAI...');
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(ext==='csv'){
+    Papa.parse(file,{header:true,skipEmptyLines:true,complete:r=>{raw=r.data;cols=r.meta.fields;hideL();showMapper();}});
+  } else {
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const wb=XLSX.read(e.target.result,{type:'binary'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      raw=XLSX.utils.sheet_to_json(ws,{raw:false});
+      cols=Object.keys(raw[0]||{});
+      hideL();showMapper();
+    };
+    reader.readAsBinaryString(file);
+  }
+}
+
+// ============================================================
+// COLUMN MAPPER
+// ============================================================
+const CMAP_FIELDS=[
+  {k:'datetime',l:'📅 Date / Time *',req:true},
+  {k:'calling', l:'📞 Calling Number (A) *',req:true},
+  {k:'called',  l:'📞 Called Number (B) *',req:true},
+  {k:'type',    l:'Type (Call/SMS)',req:false},
+  {k:'direction',l:'Direction (Out/In/Missed)',req:false},
+  {k:'duration',l:'⏱️ Duration (Seconds)',req:false},
+  {k:'imei',    l:'IMEI',req:false},
+  {k:'tower',   l:'📡 Cell Tower ID',req:false},
+  {k:'towerName',l:'📍 Tower/Location Name',req:false},
+  {k:'towerType',l:'🏷️ Tower Type',req:false},
+  {k:'lat',     l:'🌐 Latitude',req:false},
+  {k:'lon',     l:'🌐 Longitude',req:false},
+  {k:'label',   l:'🏷️ Contact Label',req:false},
+];
+
+function showMapper(){
+  const auto={};
+  cols.forEach(c=>{
+    const cl=c.toLowerCase().replace(/[\s_\-\.]/g,'');
+    if(!auto.datetime&&(cl.includes('date')||cl.includes('time')||cl.includes('stamp'))) auto.datetime=c;
+    if(!auto.calling&&(cl.includes('calling')||cl.includes('anumber')||cl.includes('caller')||cl==='from'||cl.includes('sourceno')||cl.includes('aparty'))) auto.calling=c;
+    if(!auto.called&&(cl.includes('called')||cl.includes('bnumber')||cl.includes('callee')||cl==='to'||cl.includes('destno')||cl.includes('bparty'))) auto.called=c;
+    if(!auto.type&&(cl==='type'||cl.includes('calltype')||cl.includes('rectype')||cl.includes('servicetype'))) auto.type=c;
+    if(!auto.direction&&(cl.includes('direction')||cl==='dir'||cl.includes('calldir'))) auto.direction=c;
+    if(!auto.duration&&(cl.includes('duration')||cl.includes('dur')||cl==='sec'||cl.includes('talktime'))) auto.duration=c;
+    if(!auto.imei&&cl.includes('imei')) auto.imei=c;
+    if(!auto.tower&&(cl.includes('tower')||cl.includes('bts')||cl.includes('cgi')||cl.includes('cellid'))&&!cl.includes('name')&&!cl.includes('type')) auto.tower=c;
+    if(!auto.towerName&&(cl.includes('towername')||cl.includes('location')||cl.includes('area')||cl.includes('place')||cl.includes('site'))) auto.towerName=c;
+    if(!auto.towerType&&(cl.includes('towertype')||cl.includes('loctype')||cl.includes('loctype')||cl.includes('locationtype'))) auto.towerType=c;
+    if(!auto.lat&&(cl.includes('lat'))&&!cl.includes('last')) auto.lat=c;
+    if(!auto.lon&&(cl.includes('lon')||cl.includes('lng'))) auto.lon=c;
+    if(!auto.label&&(cl.includes('label')||cl.includes('contact')||cl.includes('name')||cl.includes('remark'))) auto.label=c;
+  });
+
+  const g=document.getElementById('cmapGrid');g.innerHTML='';
+  CMAP_FIELDS.forEach(f=>{
+    const d=document.createElement('div');d.className='cmap-item';
+    d.innerHTML=`<label>${f.l}${f.req?' <span style="color:#ff3366">*</span>':''}</label>
+    <select id="cm_${f.k}">
+      <option value="">-- Skip --</option>
+      ${cols.map(c=>`<option value="${c}"${auto[f.k]===c?' selected':''}>${c}</option>`).join('')}
+    </select>`;
+    g.appendChild(d);
+  });
+
+  // Preview
+  document.getElementById('colMapperBox').style.display='block';
+  const previewCols=cols.slice(0,6);
+  document.getElementById('previewBox').style.display='block';
+  document.getElementById('previewTbl').innerHTML=`<table class="dt">
+    <thead><tr>${previewCols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+    <tbody>${raw.slice(0,3).map(r=>`<tr>${previewCols.map(c=>`<td>${r[c]||''}</td>`).join('')}</tr>`).join('')}
+    </tbody></table>`;
+}
+
+// ============================================================
+// PROCESS DATA
+// ============================================================
+function processData(){
+  CMAP_FIELDS.forEach(f=>{const el=document.getElementById('cm_'+f.k);if(el)cmap[f.k]=el.value;});
+  if(!cmap.datetime||!cmap.calling||!cmap.called){alert('⚠️ Date/Time, Calling Number aur Called Number columns zaroor select karo!');return;}
+  showL('DATA PROCESS HO RAHA HAI...');
+  setTimeout(()=>{
+    proc=raw.map((r,i)=>{
+      const dt=parseDate(r[cmap.datetime]||'');
+      const typ=(r[cmap.type]||'').trim();
+      const dir=(r[cmap.direction]||'').trim();
+      const calling=cleanNum(r[cmap.calling]||'');
+      const called=cleanNum(r[cmap.called]||'');
+      const dur=parseFloat(r[cmap.duration]||0)||0;
+      // Auto detect type from duration
+      const finalType=typ||( dur===0&&dir==='Missed'?'Call':typ||'Call' );
+      const finalDir=dir||'Outgoing';
+      return {
+        idx:i, raw_dt:r[cmap.datetime]||'',date:dt,
+        calling, called, type:finalType, dir:finalDir,
+        duration:dur, imei:r[cmap.imei]||'',
+        tower:r[cmap.tower]||'', towerName:r[cmap.towerName]||'',
+        towerType:r[cmap.towerType]||'unknown',
+        lat:parseFloat(r[cmap.lat]||'')||null,
+        lon:parseFloat(r[cmap.lon]||'')||null,
+        label:r[cmap.label]||'',
+      };
+    }).filter(r=>r.calling&&r.called);
+
+    // Detect suspect (most frequent number)
+    const nc={};
+    proc.forEach(r=>{nc[r.calling]=(nc[r.calling]||0)+1;nc[r.called]=(nc[r.called]||0)+1;});
+    SUSPECT=Object.entries(nc).sort((a,b)=>b[1]-a[1])[0]?.[0]||'';
+
+    // Populate timeline contact filter
+    const cStats=buildCStats();
+    const sel=document.getElementById('tl_contact');
+    sel.innerHTML='<option value="">All</option>'+
+      Object.values(cStats).sort((a,b)=>b.total-a.total).slice(0,40)
+      .map(c=>`<option value="${c.num}">${c.num}${c.label?' · '+c.label:''}</option>`).join('');
+
+    isLoaded=true;
+    hideL();
+    renderDashboard();
+    filterRaw();
+  },50);
+}
+
+function cleanNum(n){return n.toString().trim().replace(/^\+91/,'').replace(/^91(\d{10})$/,'$1');}
+function parseDate(s){
+  if(!s)return null;
+  try{
+    let d=new Date(s);
+    if(isNaN(d)){
+      // DD/MM/YYYY HH:MM:SS
+      const m=s.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\s*(\d{1,2}):(\d{2}):?(\d{2})?/);
+      if(m)d=new Date(`${m[3]}-${pad2(m[2])}-${pad2(m[1])}T${pad2(m[4])}:${m[5]}:${m[6]||'00'}`);
+    }
+    return isNaN(d.getTime())?null:d;
+  }catch{return null;}
+}
+
+// ============================================================
+// CONTACT STATS
+// ============================================================
+const TYPE_ORDER=['suspicious','burner','victim','associate','family','unknown','service'];
+const TYPE_COL={associate:'#ff6b00',family:'#00ff88',suspicious:'#ff3366',burner:'#aa00ff',victim:'#ffaa00',unknown:'#00e5ff',service:'#888'};
+const TYPE_ICO={associate:'🤝',family:'👨‍👩‍👧',suspicious:'🚨',burner:'🔥',victim:'⚠️',unknown:'❓',service:'🔔'};
+
+function buildCStats(){
+  const s={};
+  proc.forEach(r=>{
+    const isSuspOut=(r.calling===SUSPECT);
+    const other=isSuspOut?r.called:r.calling;
+    if(!other||other===SUSPECT)return;
+    if(!s[other])s[other]={
+      num:other,label:r.label||'',type:'unknown',
+      calls:0,smsCount:0,out:0,inc:0,mis:0,total:0,
+      totalDur:0,nightCalls:0,first:r.date,last:r.date,
+      towers:[],
+    };
+    const cs=s[other];
+    if(r.label&&!cs.label)cs.label=r.label;
+    cs.type=detectType(other,cs.label||r.label||'');
+    cs.total++;
+    if(r.type==='SMS')cs.smsCount++;
+    else{
+      cs.calls++;
+      if(r.dir==='Outgoing')cs.out++;
+      else if(r.dir==='Incoming')cs.inc++;
+      else cs.mis++;
+    }
+    cs.totalDur+=r.duration;
+    if(r.date){
+      if(!cs.first||r.date<cs.first)cs.first=r.date;
+      if(!cs.last||r.date>cs.last)cs.last=r.date;
+      const h=r.date.getHours();
+      if(h>=23||h<6)cs.nightCalls++;
+    }
+    if(r.tower&&!cs.towers.includes(r.tower))cs.towers.push(r.tower);
+  });
+  return s;
+}
+
+function detectType(num,label){
+  if(!label)return 'unknown';
+  const l=label.toLowerCase();
+  // Suspicious / burner first (highest priority)
+  if(l.includes('suspicious')||l.includes('pk contact')||l.includes('threat')||l.includes('enemy')||l.includes('accused')) return 'suspicious';
+  if(l.includes('burner')||l.includes('temp phone')||l.includes('throwaway')||l.includes('disposable')) return 'burner';
+  if(l.includes('victim')||l.includes('complainant')||l.includes('shikayat')) return 'victim';
+  // Family - extensive list
+  if(l.includes('family')||l.includes('wife')||l.includes('husband')||
+     l.includes('brother')||l.includes('sister')||l.includes('bhai')||l.includes('behan')||
+     l.includes('father')||l.includes('mother')||l.includes('papa')||l.includes('mama')||
+     l.includes('dad ')||l.includes('mom ')||l.includes('maa ')||l.includes('baap')||
+     l.includes('baba')||l.includes('dada')||l.includes('dadi')||l.includes('nana')||
+     l.includes('nani')||l.includes('son')||l.includes('daughter')||l.includes('beta')||
+     l.includes('beti')||l.includes('chacha')||l.includes('chachi')||l.includes('mama ')||
+     l.includes('mami')||l.includes('uncle')||l.includes('aunty')||l.includes('cousin')||
+     l.includes('spouse')) return 'family';
+  // Associate
+  if(l.includes('associate')||l.includes('partner')||l.includes('colleague')||
+     l.includes('friend')||l.includes('dost')||l.includes('yaar')||l.includes('saathi')) return 'associate';
+  // Service numbers
+  if(/^(100|108|112|101|1800\d+|1090|1091|1930)$/.test(num)) return 'service';
+  return 'unknown';
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard(){
+  const total=proc.length;
+  const calls=proc.filter(r=>r.type==='Call');
+  const sms=proc.filter(r=>r.type==='SMS');
+  const out=proc.filter(r=>r.dir==='Outgoing'&&r.type==='Call');
+  const inc=proc.filter(r=>r.dir==='Incoming'&&r.type==='Call');
+  const mis=proc.filter(r=>r.dir==='Missed');
+  const totalDur=calls.filter(r=>r.duration>0).reduce((s,r)=>s+r.duration,0);
+  const cStats=buildCStats();
+  const uniqueContacts=Object.keys(cStats).length;
+  const dates=proc.filter(r=>r.date).map(r=>r.date);
+  const minD=dates.length?new Date(Math.min(...dates)):null;
+  const maxD=dates.length?new Date(Math.max(...dates)):null;
+
+  document.getElementById('statsGrid').innerHTML=`
+    <div class="sc o"><div class="sc-ico">📊</div><div class="sc-val">${total.toLocaleString()}</div><div class="sc-lbl">Total Records</div></div>
+    <div class="sc b"><div class="sc-ico">📞</div><div class="sc-val">${calls.length}</div><div class="sc-lbl">Total Calls</div></div>
+    <div class="sc g"><div class="sc-ico">💬</div><div class="sc-val">${sms.length}</div><div class="sc-lbl">SMS</div></div>
+    <div class="sc r"><div class="sc-ico">📵</div><div class="sc-val">${mis.length}</div><div class="sc-lbl">Missed Calls</div></div>
+    <div class="sc y"><div class="sc-ico">👥</div><div class="sc-val">${uniqueContacts}</div><div class="sc-lbl">Unique Contacts</div></div>
+    <div class="sc p"><div class="sc-ico">⏱️</div><div class="sc-val">${fmtDur(totalDur)}</div><div class="sc-lbl">Total Call Time</div></div>`;
+
+  // Suspect info
+  document.getElementById('suspectInfo').style.display='block';
+  document.getElementById('suspectInfoBody').innerHTML=`
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;">
+      <span style="font-family:var(--font-m);font-size:20px;color:var(--acc);">🎯 ${SUSPECT}</span>
+      <span class="chip">📊 ${total} records</span>
+      <span class="chip">📞 ${calls.length} calls</span>
+      <span class="chip">⬆️ ${out.length} outgoing</span>
+      <span class="chip">⬇️ ${inc.length} incoming</span>
+      <span class="chip">📵 ${mis.length} missed</span>
+      <span class="chip">💬 ${sms.length} SMS</span>
+      <span class="chip">📅 ${minD?fmtDate(minD).split(' ')[0]:'-'} to ${maxD?fmtDate(maxD).split(' ')[0]:'-'}</span>
+    </div>`;
+
+  // Charts
+  document.getElementById('dashCharts').style.display='grid';
+  const top12=Object.values(cStats).sort((a,b)=>b.total-a.total).slice(0,12);
+
+  dChart('c_topContacts','bar',{
+    labels:top12.map(c=>c.num),
+    datasets:[
+      {label:'Calls',data:top12.map(c=>c.calls),backgroundColor:'rgba(255,107,0,0.75)',borderColor:'#ff6b00',borderWidth:1,borderRadius:3},
+      {label:'SMS',data:top12.map(c=>c.smsCount),backgroundColor:'rgba(0,229,255,0.6)',borderColor:'#00e5ff',borderWidth:1,borderRadius:3},
+      {label:'Missed',data:top12.map(c=>c.mis),backgroundColor:'rgba(255,51,102,0.6)',borderColor:'#ff3366',borderWidth:1,borderRadius:3},
+    ]
+  },{responsive:true,scales:{x:{stacked:true,ticks:{color:'#5a7a99',font:{size:9}},grid:{color:'rgba(26,48,80,0.3)'}},y:{stacked:true,ticks:{color:'#5a7a99'},grid:{color:'rgba(26,48,80,0.3)'}}},plugins:{legend:{labels:{color:'#5a7a99',font:{size:10}}}}});
+
+  dChart('c_callType','doughnut',{
+    labels:['Outgoing Call','Incoming Call','Missed Call','Outgoing SMS','Incoming SMS'],
+    datasets:[{data:[out.length,inc.length,mis.length,
+      proc.filter(r=>r.type==='SMS'&&r.dir==='Outgoing').length,
+      proc.filter(r=>r.type==='SMS'&&r.dir==='Incoming').length],
+      backgroundColor:['#ff6b00bb','#00ff88bb','#ff3366bb','#00e5ffbb','#aa00ffbb'],
+      borderWidth:2,borderColor:'#070a0f'}]
+  },{responsive:true,plugins:{legend:{labels:{color:'#5a7a99',font:{size:9}}}}});
+
+  // Top contacts table
+  document.getElementById('topTable').style.display='block';
+  document.getElementById('topTbody').innerHTML=Object.values(cStats).sort((a,b)=>b.total-a.total).slice(0,20).map((c,i)=>{
+    const col=TYPE_COL[c.type]||'#00e5ff';
+    return `<tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td style="font-family:var(--font-m);color:var(--acc);cursor:pointer;" onclick="filterAndShowRaw('${c.num}')">${c.num}</td>
+      <td style="font-size:10px;color:${col}">${c.label||'-'}</td>
+      <td><span class="b bo" style="background:${col}22;color:${col};border-color:${col}44">${TYPE_ICO[c.type]||'❓'} ${c.type}</span></td>
+      <td style="text-align:center">${c.calls}</td>
+      <td style="text-align:center;color:var(--acc3)">${c.smsCount}</td>
+      <td style="text-align:center;color:var(--acc4)">${c.mis}</td>
+      <td style="text-align:center;color:#ff8844">${c.out}</td>
+      <td style="text-align:center;color:var(--green)">${c.inc}</td>
+      <td style="font-family:var(--font-m)">${fmtDur(c.totalDur)}</td>
+      <td style="text-align:center;color:${c.nightCalls>5?'#ff3366':'var(--muted)'}">${c.nightCalls}</td>
+      <td style="font-size:10px">${c.last?fmtDate(c.last):'-'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ============================================================
+// CONTACTS
+// ============================================================
+function renderContacts(){
+  if(!isLoaded)return;
+  const search=(document.getElementById('cs_search')?.value||'').toLowerCase();
+  const typeF=document.getElementById('cs_type')?.value||'';
+  const sort=document.getElementById('cs_sort')?.value||'total';
+  const minC=parseInt(document.getElementById('cs_min')?.value||1)||1;
+
+  const cStats=buildCStats();
+  let list=Object.values(cStats).filter(c=>{
+    if(c.total<minC)return false;
+    if(search&&!c.num.includes(search)&&!(c.label||'').toLowerCase().includes(search))return false;
+    if(typeF&&c.type!==typeF)return false;
+    return true;
+  }).sort((a,b)=>{
+    if(sort==='total')return b.total-a.total;
+    if(sort==='dur')return b.totalDur-a.totalDur;
+    if(sort==='night')return b.nightCalls-a.nightCalls;
+    if(sort==='missed')return b.mis-a.mis;
+    if(sort==='last')return (b.last||0)-(a.last||0);
+    return 0;
+  });
+
+  document.getElementById('cs_count').textContent=`${list.length} contacts`;
+
+  document.getElementById('conGrid').innerHTML=list.slice(0,24).map(c=>{
+    const col=TYPE_COL[c.type]||'#00e5ff';
+    const ico=TYPE_ICO[c.type]||'❓';
+    const nightPct=c.calls>0?Math.round(c.nightCalls/c.calls*100):0;
+    return `<div class="con-card ${c.type}" onclick="filterAndShowRaw('${c.num}')" style="border-color:${col}44;">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,${col}88,${col});"></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="font-size:26px;width:36px;text-align:center;">${ico}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:var(--font-m);font-size:13px;font-weight:700;color:${col};overflow:hidden;text-overflow:ellipsis;">${c.num}</div>
+          <div style="font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.label||'Unknown Contact'}</div>
+        </div>
+        <span class="b bo" style="background:${col}18;color:${col};border-color:${col}33;font-size:8px;">${c.type}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;">
+        ${[['📞',c.calls,'Calls'],['💬',c.smsCount,'SMS'],['📵',c.mis,'Missed'],['⬆️',c.out,'Out'],['⬇️',c.inc,'In'],['🌙',c.nightCalls,'Night']].map(([e,v,l])=>`
+          <div style="background:rgba(0,0,0,0.25);border-radius:5px;padding:6px;text-align:center;">
+            <div style="font-family:var(--font-m);font-size:15px;color:${col};font-weight:700;">${v}</div>
+            <div style="font-size:8px;color:var(--muted);">${e} ${l}</div>
+          </div>`).join('')}
+      </div>
+      <div style="font-family:var(--font-m);font-size:9px;color:var(--muted);line-height:1.8;">
+        ⏱️ ${fmtDur(c.totalDur)} &nbsp;|&nbsp; 📡 ${c.towers.length} towers<br>
+        🕐 First: ${c.first?fmtDate(c.first):'-'}<br>
+        🕐 Last: ${c.last?fmtDate(c.last):'-'}
+      </div>
+      ${nightPct>20?`<div style="margin-top:8px;background:rgba(255,51,102,0.1);border-radius:4px;padding:5px 8px;font-size:9px;color:#ff3366;font-family:var(--font-m);">🌙 ${nightPct}% calls at night</div>`:''}
+    </div>`;
+  }).join('');
+
+  document.getElementById('conTbody').innerHTML=list.map((c,i)=>{
+    const col=TYPE_COL[c.type]||'#00e5ff';
+    return `<tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td style="font-family:var(--font-m);color:var(--acc);cursor:pointer;" onclick="filterAndShowRaw('${c.num}')">${c.num}</td>
+      <td style="font-size:10px;color:${col}">${c.label||'-'}</td>
+      <td><span class="b" style="background:${col}18;color:${col};border:1px solid ${col}33;">${TYPE_ICO[c.type]} ${c.type}</span></td>
+      <td style="text-align:center">${c.out}</td>
+      <td style="text-align:center">${c.inc}</td>
+      <td style="text-align:center;color:var(--acc4)">${c.mis}</td>
+      <td style="text-align:center;color:var(--acc3)">${c.smsCount}</td>
+      <td style="text-align:center;font-weight:700">${c.total}</td>
+      <td style="font-family:var(--font-m)">${fmtDur(c.totalDur)}</td>
+      <td style="text-align:center;color:${c.nightCalls>5?'#ff3366':'var(--muted)'}">${c.nightCalls}</td>
+      <td style="font-size:10px">${c.first?fmtDate(c.first):'-'}</td>
+      <td style="font-size:10px">${c.last?fmtDate(c.last):'-'}</td>
+      <td><span class="b ${c.type==='suspicious'||c.type==='burner'?'br':c.type==='victim'?'by':c.type==='family'?'bg':'bb'}">${TYPE_ICO[c.type]} ${c.type}</span></td>
+    </tr>`;
+  }).join('');
+}
+function resetConFilters(){
+  ['cs_search','cs_type','cs_sort','cs_min'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){if(el.tagName==='SELECT')el.value=id==='cs_sort'?'total':'';else if(id==='cs_min')el.value='1';else el.value='';}
+  });
+  renderContacts();
+}
+
+// ============================================================
+// NETWORK GRAPH — IMPROVED
+// ============================================================
+function getFilteredEdges(){
+  const minC=parseInt(document.getElementById('net_min')?.value||2)||1;
+  const netType=document.getElementById('net_type')?.value||'all';
+  const netHour=document.getElementById('net_hour')?.value||'';
+  const netFrom=document.getElementById('net_from')?.value;
+  const netTo=document.getElementById('net_to')?.value;
+
+  const edgeMap={};
+  proc.forEach(r=>{
+    if(netType!=='all'&&r.type!==netType)return;
+    if(netHour==='night'&&r.date){const h=r.date.getHours();if(!(h>=23||h<6))return;}
+    if(netHour==='day'&&r.date){const h=r.date.getHours();if(h>=23||h<6)return;}
+    if(netFrom&&r.date&&r.date<new Date(netFrom))return;
+    if(netTo&&r.date&&r.date>new Date(netTo+'T23:59:59'))return;
+
+    const key=[r.calling,r.called].sort().join('|||');
+    if(!edgeMap[key])edgeMap[key]={a:r.calling,b:r.called,calls:0,sms:0,mis:0,dur:0,times:[]};
+    if(r.type==='SMS')edgeMap[key].sms++;
+    else if(r.dir==='Missed')edgeMap[key].mis++;
+    else{edgeMap[key].calls++;edgeMap[key].dur+=r.duration;}
+    if(r.date)edgeMap[key].times.push(r.date);
+  });
+  return Object.values(edgeMap).filter(e=>(e.calls+e.sms+e.mis)>=minC);
+}
+
+function drawNet(){
+  if(!isLoaded)return;
+  const canvas=document.getElementById('netCanvas');
+  canvas.width=canvas.offsetWidth||900;
+  canvas.height=520;
+  const W=canvas.width,H=canvas.height;
+
+  const edges=getFilteredEdges();
+  const nodeSet=new Set();
+  edges.forEach(e=>{nodeSet.add(e.a);nodeSet.add(e.b);});
+  const nodeArr=[...nodeSet];
+  const cStats=buildCStats();
+
+  document.getElementById('netStats').textContent=`${nodeArr.length} numbers | ${edges.length} connections`;
+
+  // Radial layout around suspect
+  const nonSusp=nodeArr.filter(n=>n!==SUSPECT);
+  const cx=W/2,cy=H/2;
+  const r1=Math.min(W,H)*0.3;
+
+  netNodes=nodeArr.map(num=>{
+    const isSusp=num===SUSPECT;
+    const cs=cStats[num]||{};
+    const idx=nonSusp.indexOf(num);
+    const angle=isSusp?0:(2*Math.PI/Math.max(1,nonSusp.length))*idx-Math.PI/2;
+    const dist=isSusp?0:r1+(Math.random()-0.5)*50;
+    const size=isSusp?34:Math.max(12,Math.min(24,9+Math.log((cs.total||1)+1)*3.5));
+    return {
+      num,isSusp,
+      x:isSusp?cx:cx+dist*Math.cos(angle),
+      y:isSusp?cy:cy+dist*Math.sin(angle),
+      size,type:cs.type||'unknown',
+      label:cs.label||'',
+      cs,vx:0,vy:0,
+    };
+  });
+  netEdges=edges;
+  renderNet();
+  setupNetEvents(canvas);
+}
+
+function autoLayout(){
+  if(!netNodes.length)return;
+  const W=document.getElementById('netCanvas').width||900;
+  const H=520;
+  const cx=W/2,cy=H/2;
+  const nonSusp=netNodes.filter(n=>!n.isSusp);
+  nonSusp.forEach((n,i)=>{
+    const angle=(2*Math.PI/nonSusp.length)*i-Math.PI/2;
+    const dist=Math.min(W,H)*0.31;
+    n.x=cx+dist*Math.cos(angle);
+    n.y=cy+dist*Math.sin(angle);
+  });
+  renderNet();
+}
+
+function renderNet(){
+  const canvas=document.getElementById('netCanvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  // Dark grid bg
+  ctx.fillStyle='#090d14';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(26,48,80,0.3)';ctx.lineWidth=1;
+  for(let x=0;x<W;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  const maxE=Math.max(...netEdges.map(e=>e.calls+e.sms+e.mis),1);
+
+  // ─── Draw edges FIRST ───
+  netEdges.forEach(e=>{
+    const na=netNodes.find(n=>n.num===e.a);
+    const nb=netNodes.find(n=>n.num===e.b);
+    if(!na||!nb)return;
+    const total=e.calls+e.sms+e.mis;
+    const ratio=total/maxE;
+
+    // Thicker = more calls
+    ctx.beginPath();ctx.moveTo(na.x,na.y);ctx.lineTo(nb.x,nb.y);
+    ctx.strokeStyle=`rgba(255,107,0,${0.1+0.7*ratio})`;
+    ctx.lineWidth=0.5+4*ratio;ctx.stroke();
+
+    // Edge label — show calls/sms/missed breakdown
+    if(total>=2){
+      const mx=(na.x+nb.x)/2,my=(na.y+nb.y)/2;
+      const label=e.calls>0?`${e.calls}📞`:''+(e.sms>0?` ${e.sms}💬`:'')+(e.mis>0?` ${e.mis}📵`:'');
+      ctx.fillStyle='rgba(7,10,15,0.9)';
+      const tw=ctx.measureText(label).width;
+      ctx.fillRect(mx-tw/2-4,my-9,tw+8,14);
+      ctx.fillStyle='#ff9944';ctx.font='bold 9px Share Tech Mono';
+      ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label,mx,my);
+    }
+  });
+
+  // ─── Draw nodes ───
+  netNodes.forEach(n=>{
+    const col=n.isSusp?'#ff6b00':(TYPE_COL[n.type]||'#00e5ff');
+    const isSelected=selectedNode&&selectedNode.num===n.num;
+    const cs=n.cs||{};
+
+    // Outer glow ring
+    const grd=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.size*3);
+    grd.addColorStop(0,col+(isSelected?'66':'33'));
+    grd.addColorStop(0.5,col+'18');
+    grd.addColorStop(1,'transparent');
+    ctx.fillStyle=grd;ctx.beginPath();ctx.arc(n.x,n.y,n.size*3,0,Math.PI*2);ctx.fill();
+
+    // Node circle
+    ctx.beginPath();ctx.arc(n.x,n.y,n.size,0,Math.PI*2);
+    ctx.fillStyle=col+'30';ctx.fill();
+    ctx.strokeStyle=isSelected?'#ffffff':col;
+    ctx.lineWidth=isSelected?3:n.isSusp?3:2;ctx.stroke();
+
+    // Icon inside
+    ctx.font=`${n.size*0.85}px serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(n.isSusp?'🎯':TYPE_ICO[n.type]||'📞',n.x,n.y);
+
+    // ── Number label with dark pill background ──
+    const numStr=n.num;
+    ctx.font=`bold ${n.isSusp?12:10}px Share Tech Mono`;
+    const nw=ctx.measureText(numStr).width;
+    const nx=n.x, ny=n.y+n.size+5;
+    ctx.fillStyle='rgba(7,10,15,0.88)';
+    ctx.beginPath();ctx.roundRect?ctx.roundRect(nx-nw/2-5,ny,nw+10,14,4):ctx.fillRect(nx-nw/2-5,ny,nw+10,14);
+    ctx.fill();
+    ctx.fillStyle=n.isSusp?'#ff9944':col;
+    ctx.textAlign='center';ctx.textBaseline='top';
+    ctx.fillText(numStr,nx,ny+1);
+
+    // ── Relation label below number ──
+    if(n.label){
+      const rl=n.label.length>16?n.label.slice(0,15)+'…':n.label;
+      ctx.font=`9px Exo 2`;
+      const rw=ctx.measureText(rl).width;
+      ctx.fillStyle='rgba(7,10,15,0.7)';
+      ctx.fillRect(nx-rw/2-4,ny+15,rw+8,12);
+      ctx.fillStyle='#7aa8cc';ctx.textAlign='center';ctx.textBaseline='top';
+      ctx.fillText(rl,nx,ny+16);
+    }
+
+    // ── Mini stats badge for suspect ──
+    if(n.isSusp){
+      const badge=`${cs.calls||0}📞 ${cs.smsCount||0}💬 ${cs.mis||0}📵`;
+      ctx.font='9px Share Tech Mono';
+      const bw=ctx.measureText(badge).width;
+      ctx.fillStyle='rgba(255,107,0,0.15)';
+      ctx.beginPath();ctx.roundRect?ctx.roundRect(nx-bw/2-6,ny+(n.label?28:17),bw+12,14,3):ctx.fillRect(nx-bw/2-6,ny+(n.label?28:17),bw+12,14);
+      ctx.fill();
+      ctx.fillStyle='#ff9944';ctx.textAlign='center';ctx.textBaseline='top';
+      ctx.fillText(badge,nx,ny+(n.label?29:18));
+    }
+  });
+
+  // ─── Date/time filter info (top-right) ───
+  const from=document.getElementById('net_from')?.value;
+  const to=document.getElementById('net_to')?.value;
+  const hour=document.getElementById('net_hour')?.value;
+  const parts=[];
+  if(from||to) parts.push(`📅 ${from||'start'} → ${to||'now'}`);
+  if(hour==='night') parts.push('🌙 Night only (11PM-6AM)');
+  if(hour==='day') parts.push('☀️ Day only (6AM-11PM)');
+  if(parts.length){
+    const info=parts.join('  |  ');
+    ctx.font='11px Share Tech Mono';ctx.textAlign='right';ctx.textBaseline='top';
+    const iw=ctx.measureText(info).width;
+    ctx.fillStyle='rgba(7,10,15,0.8)';ctx.fillRect(W-iw-20,8,iw+16,18);
+    ctx.fillStyle='rgba(255,170,0,0.9)';ctx.fillText(info,W-10,12);
+  }
+
+  // Total records info (top-left)
+  ctx.font='10px Share Tech Mono';ctx.textAlign='left';ctx.textBaseline='top';
+  ctx.fillStyle='rgba(7,10,15,0.8)';ctx.fillRect(8,8,200,18);
+  ctx.fillStyle='rgba(0,229,255,0.7)';
+  ctx.fillText(`${netNodes.length} numbers  |  ${netEdges.length} connections`,12,12);
+}
+  ctx.strokeStyle='rgba(26,48,80,0.4)';ctx.lineWidth=1;
+  for(let x=0;x<W;x+=50){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=50){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // Edges first
+  netEdges.forEach(e=>{
+    const na=netNodes.find(n=>n.num===e.a);
+    const nb=netNodes.find(n=>n.num===e.b);
+    if(!na||!nb)return;
+    const total=e.calls+e.sms+e.mis;
+    const maxE=Math.max(...netEdges.map(x=>x.calls+x.sms+x.mis),1);
+    const alpha=0.15+0.65*(total/maxE);
+    const lw=0.5+3*(total/maxE);
+
+    ctx.beginPath();ctx.moveTo(na.x,na.y);ctx.lineTo(nb.x,nb.y);
+    ctx.strokeStyle=`rgba(255,107,0,${alpha})`;ctx.lineWidth=lw;ctx.stroke();
+
+    // Count label on edge midpoint
+    if(total>=3){
+      const mx=(na.x+nb.x)/2,my=(na.y+nb.y)/2;
+      ctx.fillStyle='rgba(7,10,15,0.85)';
+      ctx.beginPath();ctx.arc(mx,my,10,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#ff8844';ctx.font='bold 9px Share Tech Mono';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(total,mx,my);
+    }
+  });
+
+
+
+function setupNetEvents(canvas){
+  canvas.onmousedown=e=>{
+    const {mx,my}=getCanvasPos(canvas,e);
+    dragNode=netNodes.find(n=>Math.hypot(n.x-mx,n.y-my)<=n.size+4)||null;
+    if(dragNode){isDrag=true;dragOff={x:mx-dragNode.x,y:my-dragNode.y};canvas.style.cursor='grabbing';}
+  };
+  canvas.onmousemove=e=>{
+    const {mx,my}=getCanvasPos(canvas,e);
+    if(isDrag&&dragNode){
+      dragNode.x=mx-dragOff.x;dragNode.y=my-dragOff.y;
+      renderNet();
+    } else {
+      const hover=netNodes.find(n=>Math.hypot(n.x-mx,n.y-my)<=n.size+4);
+      canvas.style.cursor=hover?'pointer':'grab';
+      const tt=document.getElementById('netTooltip');
+      if(hover){
+        const cs=hover.cs||{};
+        tt.style.display='block';
+        tt.style.left=(e.offsetX+15)+'px';tt.style.top=(e.offsetY-10)+'px';
+        tt.innerHTML=`<div style="color:${TYPE_COL[hover.type]||'#00e5ff'};font-weight:700;margin-bottom:4px;">${TYPE_ICO[hover.type]||'📞'} ${hover.num}</div>
+          ${hover.label?`<div style="color:var(--muted);font-size:10px;margin-bottom:4px;">${hover.label}</div>`:''}
+          <div style="font-size:10px;line-height:1.8;">
+          📞 Calls: ${cs.calls||0}<br>💬 SMS: ${cs.smsCount||0}<br>
+          📵 Missed: ${cs.mis||0}<br>⬆️ Out: ${cs.out||0} | ⬇️ In: ${cs.inc||0}<br>
+          ⏱️ ${fmtDur(cs.totalDur||0)}<br>🌙 Night: ${cs.nightCalls||0}
+          </div>`;
+      } else tt.style.display='none';
+    }
+  };
+  canvas.onmouseup=()=>{isDrag=false;dragNode=null;canvas.style.cursor='grab';};
+  canvas.onmouseleave=()=>{document.getElementById('netTooltip').style.display='none';};
+  canvas.onclick=e=>{
+    if(isDrag)return;
+    const {mx,my}=getCanvasPos(canvas,e);
+    const clicked=netNodes.find(n=>Math.hypot(n.x-mx,n.y-my)<=n.size+4);
+    if(clicked){
+      selectedNode=clicked;renderNet();showNodeDetail(clicked);
+    } else {
+      selectedNode=null;renderNet();
+      document.getElementById('netNodeDetail').style.display='none';
+      document.getElementById('netCallLogBox').style.display='none';
+    }
+  };
+}
+
+function showNodeDetail(node){
+  const cs=node.cs||{};
+  const col=TYPE_COL[node.type]||'#00e5ff';
+  document.getElementById('netNodeDetail').style.display='block';
+  document.getElementById('netNodeTitle').textContent=`${TYPE_ICO[node.type]||'📞'} ${node.num} — ${node.label||'Unknown'}`;
+
+  document.getElementById('netNodeBody').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">
+      ${[['📞 Calls',cs.calls||0],['💬 SMS',cs.smsCount||0],['📵 Missed',cs.mis||0],['⏱️ Duration',fmtDur(cs.totalDur||0)],['⬆️ Out',cs.out||0],['⬇️ In',cs.inc||0],['🌙 Night',cs.nightCalls||0],['📡 Towers',(cs.towers||[]).length]].map(([l,v])=>`
+        <div style="background:var(--bg2);border:1px solid ${col}33;border-radius:6px;padding:10px;text-align:center;">
+          <div style="font-family:var(--font-m);font-size:16px;font-weight:700;color:${col};">${v}</div>
+          <div style="font-size:9px;color:var(--muted);">${l}</div>
+        </div>`).join('')}
+    </div>
+    <div style="font-family:var(--font-m);font-size:10px;color:var(--muted);line-height:2;">
+      🕐 First contact: ${cs.first?fmtDate(cs.first):'-'} &nbsp;|&nbsp;
+      🕐 Last contact: ${cs.last?fmtDate(cs.last):'-'}<br>
+      📡 Towers: ${(cs.towers||[]).join(', ')||'-'}
+    </div>`;
+
+  // Call log
+  const callLog=proc.filter(r=>(r.calling===node.num||r.called===node.num)&&(r.calling===SUSPECT||r.called===SUSPECT));
+  document.getElementById('netCallLogBox').style.display='block';
+  document.getElementById('netCallLogTitle').textContent=`📋 CALLS WITH ${node.num} (${callLog.length} records)`;
+  document.getElementById('netCallLog').innerHTML=callLog.slice(0,50).map(r=>{
+    const isOut=r.calling===SUSPECT;
+    const col=r.dir==='Missed'?'#ff3366':isOut?'#ff8844':'#00ff88';
+    return `<tr>
+      <td style="font-family:var(--font-m);font-size:10px">${r.raw_dt}</td>
+      <td><span class="b ${r.type==='SMS'?'bb':'bo'}">${r.type}</span></td>
+      <td style="color:${col}">${r.dir==='Missed'?'📵 Missed':isOut?'⬆️ Out':'⬇️ In'}</td>
+      <td style="font-family:var(--font-m)">${r.duration?fmtDur(r.duration):'-'}</td>
+      <td style="font-size:10px;color:var(--muted)">${r.towerName||r.tower||'-'}</td>
+    </tr>`;
+  }).join('')+(callLog.length>50?`<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:8px;font-size:10px;">...${callLog.length-50} more records</td></tr>`:'');
+}
+
+function getCanvasPos(canvas,e){
+  const rect=canvas.getBoundingClientRect();
+  const scaleX=canvas.width/rect.width;
+  const scaleY=canvas.height/rect.height;
+  return{mx:(e.clientX-rect.left)*scaleX,my:(e.clientY-rect.top)*scaleY};
+}
+
+// ============================================================
+// TOWER MAP
+// ============================================================
+function initMap(){
+  if(!tMap){
+    tMap=L.map('towerMap',{center:[28.6,77.2],zoom:10,preferCanvas:true});
+    // Primary tile: CartoDB Dark
+    const tile=L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+      attribution:'© CartoDB | © OSM',maxZoom:19,subdomains:'abcd'
+    });
+    tile.addTo(tMap);
+    // On error fallback to OSM
+    tile.on('tileerror',function(){
+      if(!tMap._fallback){
+        tMap._fallback=true;
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:19}).addTo(tMap);
+      }
+    });
+  }
+  // Force size recalc after DOM render
+  requestAnimationFrame(()=>{
+    tMap.invalidateSize(true);
+    setTimeout(()=>{tMap.invalidateSize(true);renderMap();},200);
+  });
+}
+
+function renderMap(){
+  if(!tMap||!isLoaded)return;
+
+  tMarkers.forEach(m=>{try{tMap.removeLayer(m);}catch(e){}});
+  tMarkers=[];
+  if(tPolyline){try{tMap.removeLayer(tPolyline);}catch(e){}tPolyline=null;}
+
+  const tf=document.getElementById('mf_time')?.value||'all';
+  const sd=document.getElementById('mf_date')?.value||'';
+  const mt=document.getElementById('mf_type')?.value||'all';   // Call/SMS/all
+  const md=document.getElementById('mf_dir')?.value||'all';    // Out/In/Missed/all
+  const mn=(document.getElementById('mf_num')?.value||'').trim();
+  const now=new Date();
+
+  const data=proc.filter(r=>{
+    if(!r.lat||!r.lon)return false;
+    if(!r.date)return false;
+    const diff=(now-r.date)/86400000;
+    if(tf==='1d'&&diff>1)return false;
+    if(tf==='7d'&&diff>7)return false;
+    if(tf==='30d'&&diff>30)return false;
+    if(sd&&r.date.toISOString().split('T')[0]!==sd)return false;
+    // Type filter: 'Call' means calls (including missed), 'SMS' means SMS
+    if(mt==='Call'&&r.type!=='Call')return false;
+    if(mt==='SMS'&&r.type!=='SMS')return false;
+    // Direction filter
+    if(md==='Outgoing'&&r.dir!=='Outgoing')return false;
+    if(md==='Incoming'&&r.dir!=='Incoming')return false;
+    if(md==='Missed'&&r.dir!=='Missed')return false;
+    if(mn&&r.calling!==mn&&r.called!==mn)return false;
+    return true;
+  });
+
+  if(data.length===0){
+    document.getElementById('mapNotice').innerHTML='⚠️ Is filter mein koi location data nahi. <b>Lat/Lon columns</b> column mapper mein select karo ya filters reset karo.';
+    document.getElementById('mapStats').innerHTML='';
+    document.getElementById('towerTbody').innerHTML='';
+    return;
+  }
+
+  // Group by tower (aggregate for performance)
+  const towers={};
+  data.forEach(r=>{
+    const latR=+r.lat.toFixed(3), lonR=+r.lon.toFixed(3);
+    const key=r.tower||(latR+'_'+lonR);
+    if(!towers[key])towers[key]={
+      lat:r.lat,lon:r.lon,name:r.towerName||r.tower||key,
+      type:r.towerType||'unknown',id:r.tower||key,
+      calls:0,sms:0,mis:0,out:0,inc:0,
+      first:r.date,last:r.date,nums:new Set(),
+    };
+    const t=towers[key];
+    if(r.type==='SMS')t.sms++;
+    else if(r.dir==='Missed')t.mis++;
+    else{t.calls++;if(r.dir==='Outgoing')t.out++;else t.inc++;}
+    t.nums.add(r.calling===SUSPECT?r.called:r.calling);
+    if(r.date){if(!t.first||r.date<t.first)t.first=r.date;if(!t.last||r.date>t.last)t.last=r.date;}
+  });
+
+  const tIco={home:'🏠',work:'🏢',suspicious:'🚨',crime:'☠️',transit:'🚌',unknown:'📡'};
+  const tCol={home:'#00ff88',work:'#00e5ff',suspicious:'#ffaa00',crime:'#ff3366',transit:'#aa00ff',unknown:'#7aa8cc'};
+
+  const tList=Object.values(towers);
+  const maxTotal=Math.max(...tList.map(t=>t.calls+t.sms+t.mis),1);
+
+  tList.forEach(t=>{
+    const col=tCol[t.type]||'#7aa8cc';
+    const ico=tIco[t.type]||'📡';
+    const total=t.calls+t.sms+t.mis;
+    const radius=Math.max(10,Math.min(35,10+20*(total/maxTotal)));
+
+    // CircleMarker for performance
+    const cm=L.circleMarker([t.lat,t.lon],{
+      radius,fillColor:col,color:col,weight:2,
+      fillOpacity:0.2,opacity:0.85,
+    });
+
+    // Emoji label on top
+    const lbl=L.marker([t.lat,t.lon],{
+      icon:L.divIcon({
+        html:`<div style="font-size:${Math.max(14,radius*0.7)}px;text-align:center;pointer-events:none;user-select:none;">${ico}</div>`,
+        className:'',iconSize:[0,0],iconAnchor:[0,0]
+      }),interactive:false,
+    });
+
+    const popHtml=`<div style="font-family:monospace;font-size:11px;min-width:220px;">
+      <div style="font-size:14px;font-weight:700;color:${col};margin-bottom:6px;">${ico} ${t.name}</div>
+      <hr style="margin:4px 0;border-color:#ccc">
+      <table style="width:100%;font-size:11px;">
+        <tr><td><b>Tower ID</b></td><td>${t.id}</td></tr>
+        <tr><td><b>Type</b></td><td style="color:${col};text-transform:uppercase;font-weight:700;">${t.type}</td></tr>
+        <tr><td><b>📞 Calls</b></td><td>${t.calls} (⬆️${t.out} ⬇️${t.inc})</td></tr>
+        <tr><td><b>💬 SMS</b></td><td>${t.sms}</td></tr>
+        <tr><td><b>📵 Missed</b></td><td style="color:#ff6666;">${t.mis}</td></tr>
+        <tr><td><b>👥 Contacts</b></td><td>${t.nums.size}</td></tr>
+        <tr><td><b>🕐 First</b></td><td style="font-size:10px;">${t.first?fmtDate(t.first):'-'}</td></tr>
+        <tr><td><b>🕐 Last</b></td><td style="font-size:10px;">${t.last?fmtDate(t.last):'-'}</td></tr>
+        <tr><td><b>📍 Coords</b></td><td>${t.lat.toFixed(5)}, ${t.lon.toFixed(5)}</td></tr>
+      </table>
+    </div>`;
+
+    cm.bindPopup(popHtml,{maxWidth:280});
+    cm.addTo(tMap);
+    lbl.addTo(tMap);
+    tMarkers.push(cm,lbl);
+  });
+
+  const placed=tList.length;
+  const misC=data.filter(r=>r.dir==='Missed').length;
+  const smsC=data.filter(r=>r.type==='SMS').length;
+  const callC=data.filter(r=>r.type==='Call'&&r.dir!=='Missed').length;
+  document.getElementById('mapNotice').innerHTML=`✅ <b>${placed} towers</b> — ${data.length} records | 📞 ${callC} calls | 💬 ${smsC} SMS | 📵 ${misC} missed`;
+
+  // Map stats
+  document.getElementById('mapStats').innerHTML=`
+    <div class="sc o"><div class="sc-ico">📡</div><div class="sc-val">${placed}</div><div class="sc-lbl">Towers</div></div>
+    <div class="sc b"><div class="sc-ico">📞</div><div class="sc-val">${callC}</div><div class="sc-lbl">Calls</div></div>
+    <div class="sc g"><div class="sc-ico">💬</div><div class="sc-val">${smsC}</div><div class="sc-lbl">SMS</div></div>
+    <div class="sc r"><div class="sc-ico">📵</div><div class="sc-val">${misC}</div><div class="sc-lbl">Missed</div></div>`;
+
+  // Tower table
+  document.getElementById('towerTbody').innerHTML=tList.sort((a,b)=>(b.calls+b.sms+b.mis)-(a.calls+a.sms+a.mis)).map((t,i)=>{
+    const col=tCol[t.type]||'#7aa8cc';
+    return `<tr>
+      <td style="font-family:var(--font-m);font-size:9px;color:var(--muted)">${t.id}</td>
+      <td><span style="color:${col}">${tIco[t.type]||'📡'} ${t.name}</span></td>
+      <td><span class="b" style="background:${col}18;color:${col};border:1px solid ${col}33;font-size:8px;">${t.type}</span></td>
+      <td style="text-align:center">${t.calls}</td>
+      <td style="text-align:center">${t.sms}</td>
+      <td style="text-align:center;color:${t.mis>0?'var(--acc4)':'var(--muted)'};font-weight:${t.mis>0?700:400}">${t.mis}</td>
+      <td style="font-size:9px">${t.first?fmtDate(t.first):'-'}</td>
+      <td style="font-size:9px">${t.last?fmtDate(t.last):'-'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function fitMap(){
+  if(!tMap)return;
+  // Only use circleMarkers (not label divIcon markers) for bounds
+  const circleMkrs=tMarkers.filter(m=>m.getLatLng&&typeof m.getRadius==='function');
+  if(!circleMkrs.length)return;
+  try{tMap.fitBounds(L.featureGroup(circleMkrs).getBounds().pad(0.18));}catch(e){tMap.setView([28.6,77.2],10);}
+}
+function toggleTrail(){
+  trailOn=!trailOn;
+  document.getElementById('trailBtn').textContent=trailOn?'✕ TRAIL OFF':'🛤️ TRAIL';
+  document.getElementById('trailBtn').className=trailOn?'btn btn-y btn-sm':'btn btn-r btn-sm';
+  if(tPolyline){tMap.removeLayer(tPolyline);tPolyline=null;}
+  if(!trailOn)return;
+  const sd=document.getElementById('mf_date')?.value||'';
+  let d=proc.filter(r=>r.lat&&r.lon&&r.date);
+  if(sd)d=d.filter(r=>r.date.toISOString().split('T')[0]===sd);
+  d.sort((a,b)=>a.date-b.date);
+  if(d.length<2){alert('Trail ke liye specific date select karo!');trailOn=false;return;}
+  tPolyline=L.polyline(d.map(r=>[r.lat,r.lon]),{color:'#ff6b00',weight:3,opacity:0.85,dashArray:'8,4'}).addTo(tMap);
+  tMap.fitBounds(tPolyline.getBounds().pad(0.1));
+}
+
+// ============================================================
+// TIMELINE
+// ============================================================
+function renderTimeline(){
+  if(!isLoaded)return;
+  const view=document.getElementById('tl_view')?.value||'day';
+  const period=document.getElementById('tl_period')?.value||'all';
+  const contact=document.getElementById('tl_contact')?.value||'';
+  const type=document.getElementById('tl_type')?.value||'all';
+  const now=new Date();
+
+  let data=proc.filter(r=>{
+    if(!r.date)return false;
+    const d=(now-r.date)/86400000;
+    if(period==='1d'&&d>1)return false;
+    if(period==='7d'&&d>7)return false;
+    if(period==='30d'&&d>30)return false;
+    if(contact&&r.calling!==contact&&r.called!==contact)return false;
+    if(type!=='all'&&type==='Missed'&&r.dir!=='Missed')return false;
+    if(type!=='all'&&type!=='Missed'&&r.type!==type)return false;
+    return true;
+  });
+
+  const getK=d=>{
+    if(view==='hour')return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())+' '+pad2(d.getHours())+':00';
+    if(view==='day')return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+    if(view==='week')return d.getFullYear()+'-W'+pad2(getWk(d));
+    return d.getFullYear()+'-'+pad2(d.getMonth()+1);
+  };
+
+  const callG={},smsG={},misG={},durG={};
+  data.forEach(r=>{
+    const k=getK(r.date);
+    callG[k]=(callG[k]||0)+(r.type==='Call'&&r.dir!=='Missed'?1:0);
+    smsG[k]=(smsG[k]||0)+(r.type==='SMS'?1:0);
+    misG[k]=(misG[k]||0)+(r.dir==='Missed'?1:0);
+    durG[k]=(durG[k]||0)+r.duration;
+  });
+  const lbs=Object.keys({...callG,...smsG,...misG}).sort();
+
+  dChart('c_tl','bar',{labels:lbs,datasets:[
+    {label:'📞 Calls',data:lbs.map(k=>callG[k]||0),backgroundColor:'rgba(255,107,0,0.75)',borderColor:'#ff6b00',borderWidth:1,borderRadius:3,order:1},
+    {label:'💬 SMS',data:lbs.map(k=>smsG[k]||0),backgroundColor:'rgba(0,229,255,0.6)',borderColor:'#00e5ff',borderWidth:1,borderRadius:3,order:2},
+    {label:'📵 Missed',data:lbs.map(k=>misG[k]||0),backgroundColor:'rgba(255,51,102,0.6)',borderColor:'#ff3366',borderWidth:1,borderRadius:3,order:3},
+  ]},{responsive:true,scales:{
+    x:{stacked:true,ticks:{color:'#5a7a99',font:{size:9},maxTicksLimit:25},grid:{color:'rgba(26,48,80,0.3)'}},
+    y:{stacked:true,ticks:{color:'#5a7a99'},grid:{color:'rgba(26,48,80,0.3)'}}
+  },plugins:{legend:{labels:{color:'#7aa8cc',font:{size:10}}}}});
+
+  dChart('c_dur','line',{labels:lbs,datasets:[{
+    label:'Duration (min)',data:lbs.map(k=>+(durG[k]||0/60).toFixed(1)),
+    borderColor:'#ffaa00',backgroundColor:'rgba(255,170,0,0.1)',fill:true,tension:0.4,pointRadius:2,
+  }]},{responsive:true,scales:{
+    x:{ticks:{color:'#5a7a99',font:{size:9},maxTicksLimit:20},grid:{color:'rgba(26,48,80,0.3)'}},
+    y:{ticks:{color:'#5a7a99'},grid:{color:'rgba(26,48,80,0.3)'}}
+  },plugins:{legend:{labels:{color:'#7aa8cc'}}}});
+
+  const tc=data.filter(r=>r.type==='Call'&&r.dir!=='Missed').length;
+  const sc=data.filter(r=>r.type==='SMS').length;
+  const mc=data.filter(r=>r.dir==='Missed').length;
+  dChart('c_split','doughnut',{
+    labels:['📞 Calls','💬 SMS','📵 Missed'],
+    datasets:[{data:[tc,sc,mc],backgroundColor:['#ff6b00bb','#00e5ffbb','#ff3366bb'],borderWidth:2,borderColor:'#070a0f'}]
+  },{responsive:true,plugins:{legend:{labels:{color:'#7aa8cc',font:{size:10}}}}});
+
+  const peakK=lbs[lbs.map(k=>(callG[k]||0)+(smsG[k]||0)+(misG[k]||0)).indexOf(Math.max(...lbs.map(k=>(callG[k]||0)+(smsG[k]||0)+(misG[k]||0))))];
+  document.getElementById('tlStats').innerHTML=`
+    <div class="sc o"><div class="sc-ico">📊</div><div class="sc-val">${data.length}</div><div class="sc-lbl">Filtered</div></div>
+    <div class="sc b"><div class="sc-ico">📞</div><div class="sc-val">${tc}</div><div class="sc-lbl">Calls</div></div>
+    <div class="sc g"><div class="sc-ico">💬</div><div class="sc-val">${sc}</div><div class="sc-lbl">SMS</div></div>
+    <div class="sc r"><div class="sc-ico">📵</div><div class="sc-val">${mc}</div><div class="sc-lbl">Missed</div></div>
+    <div class="sc y"><div class="sc-ico">📅</div><div class="sc-val" style="font-size:13px;">${peakK||'-'}</div><div class="sc-lbl">Peak Period</div></div>`;
+}
+
+// ============================================================
+// HABITS
+// ============================================================
+function renderHabits(){
+  if(!isLoaded)return;
+  const hourC=new Array(24).fill(0);
+  const dayM=Array.from({length:7},()=>new Array(24).fill(0));
+  const dayC=new Array(7).fill(0);
+  const dayN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const allRec=proc.filter(r=>r.date);
+  allRec.forEach(r=>{
+    const h=r.date.getHours(),d=r.date.getDay();
+    hourC[h]++;dayM[d][h]++;dayC[d]++;
+  });
+  const total=allRec.length||1;
+  const ph=hourC.indexOf(Math.max(...hourC));
+  const pd=dayC.indexOf(Math.max(...dayC));
+  const nc=hourC.slice(23).concat(hourC.slice(0,6)).reduce((a,b)=>a+b,0);
+  const shortCalls=proc.filter(r=>r.type==='Call'&&r.duration>0&&r.duration<10).length;
+
+  document.getElementById('habStats').innerHTML=`
+    <div class="sc b"><div class="sc-ico">⏰</div><div class="sc-val">${pad2(ph)}:00</div><div class="sc-lbl">Peak Hour</div></div>
+    <div class="sc o"><div class="sc-ico">📅</div><div class="sc-val">${dayN[pd]}</div><div class="sc-lbl">Busiest Day</div></div>
+    <div class="sc r"><div class="sc-ico">🌙</div><div class="sc-val">${Math.round(nc/total*100)}%</div><div class="sc-lbl">Night Activity</div></div>
+    <div class="sc y"><div class="sc-ico">⚡</div><div class="sc-val">${shortCalls}</div><div class="sc-lbl">Short Calls &lt;10s</div></div>`;
+
+  // Heatmap
+  const maxV=Math.max(...dayM.flat(),1);
+  const hCont=document.getElementById('hmapDiv');
+  const hLbls=Array.from({length:24},(_,i)=>pad2(i));
+  let html=`<div class="hm-grid" style="grid-template-columns:38px repeat(24,1fr);min-width:640px;">
+    <div></div>${hLbls.map(h=>`<div style="font-family:var(--font-m);font-size:8px;color:var(--muted);text-align:center;padding-bottom:3px;">${h}</div>`).join('')}`;
+  dayN.forEach((dn,di)=>{
+    html+=`<div style="font-family:var(--font-m);font-size:9px;color:var(--muted);display:flex;align-items:center;padding-right:4px;">${dn}</div>`;
+    for(let h=0;h<24;h++){
+      const v=dayM[di][h];const int=v/maxV;
+      const r=Math.round(255*Math.min(1,int*1.8));const g=Math.round(80*Math.max(0,1-int*2));
+      const col=v===0?'rgba(16,24,32,0.6)':`rgba(${r},${g},0,${0.3+int*0.7})`;
+      const isNight=h>=23||h<6;
+      html+=`<div class="hm-cell" title="${dn} ${pad2(h)}:00 — ${v} records${isNight?' 🌙':''}" style="background:${col};${v>0?'box-shadow:0 0 '+Math.round(int*6)+'px rgba(255,107,0,0.3);':''}"></div>`;
+    }
+  });
+  html+='</div>';hCont.innerHTML=html;
+
+  dChart('c_hour','bar',{
+    labels:hLbls.map(h=>h+':00'),
+    datasets:[{label:'Records',data:hourC,
+      backgroundColor:hourC.map((_,i)=>i>=23||i<6?'rgba(255,51,102,0.75)':i>=9&&i<=17?'rgba(0,255,136,0.7)':'rgba(255,107,0,0.65)'),
+      borderWidth:0,borderRadius:3}]
+  },{responsive:true,plugins:{legend:{display:false}},scales:{
+    x:{ticks:{color:'#5a7a99',font:{size:8}},grid:{color:'rgba(26,48,80,0.3)'}},
+    y:{ticks:{color:'#5a7a99'},grid:{color:'rgba(26,48,80,0.3)'}}
+  }});
+
+  dChart('c_dow','polarArea',{
+    labels:dayN,datasets:[{data:dayC,
+      backgroundColor:['rgba(255,107,0,.6)','rgba(0,229,255,.6)','rgba(0,255,136,.6)','rgba(255,51,102,.6)','rgba(170,0,255,.6)','rgba(255,170,0,.6)','rgba(0,136,255,.6)'],
+      borderWidth:1,borderColor:'rgba(255,255,255,0.1)'}]
+  },{responsive:true,plugins:{legend:{labels:{color:'#5a7a99',font:{size:9}}}}});
+
+  // Behavioral alerts
+  const cStats=buildCStats();
+  const suspC=Object.values(cStats).filter(c=>c.type==='suspicious'||c.type==='burner');
+  const alerts=[];
+  if(nc/total>0.2)alerts.push({cls:'',ico:'🌙',t:'HIGH NIGHT ACTIVITY',col:'#ff3366',d:`${Math.round(nc/total*100)}% records raat 11PM-6AM ke beech. Suspicious.`,a:'Night calls ki tower locations aur contact type check karo.'});
+  if(suspC.length>0)alerts.push({cls:'',ico:'🚨',t:'SUSPICIOUS/BURNER CONTACTS',col:'#ff3366',d:`${suspC.length} suspicious contacts se ${suspC.reduce((s,c)=>s+c.total,0)} communications detected.`,a:'In numbers ki CDR aur location bhi analyse karo.'});
+  if(shortCalls>15)alerts.push({cls:'y',ico:'⚡',t:`${shortCalls} SHORT CALLS (<10 SEC)`,col:'#ffaa00',d:'Short calls — possible signal/code calls ya call drops. Pattern dekho.',a:'Short calls ke baad kya hua — next action check karo.'});
+  if(dayC[0]+dayC[6]>total*0.3)alerts.push({cls:'y',ico:'📅',t:'HIGH WEEKEND ACTIVITY',col:'#ffaa00',d:`${Math.round((dayC[0]+dayC[6])/total*100)}% calls weekends pe. Normal work pattern se alag.`,a:'Weekend locations aur contacts check karo.'});
+  const crimeLocs=proc.filter(r=>r.towerType==='crime');
+  if(crimeLocs.length>0)alerts.push({cls:'',ico:'☠️',t:`CRIME SCENE CALLS — ${crimeLocs.length} RECORDS`,col:'#ff3366',d:`Crime scene tower se ${crimeLocs.length} records. Times: ${[...new Set(crimeLocs.filter(r=>r.date).map(r=>fmtDate(r.date)))].slice(0,3).join(', ')}`,a:'Crime ke waqt ka exact call check karo. Recording available?'});
+
+  document.getElementById('habAlerts').innerHTML=alerts.length?alerts.map(a=>`
+    <div class="abox ${a.cls}">
+      <div class="abox-ico">${a.ico}</div>
+      <div class="abox-body">
+        <div class="abox-title" style="color:${a.col}">${a.t}</div>
+        <div class="abox-detail">${a.d}</div>
+        <div class="abox-action">▸ ACTION: ${a.a}</div>
+      </div>
+      <span class="b ${a.cls===''?'br':'by'}">${a.cls===''?'HIGH':'MEDIUM'}</span>
+    </div>`).join(''):
+    '<div class="notice">✅ Koi unusual behavioral pattern nahi mila.</div>';
+}
+
+// ============================================================
+// CALLS LOG (RAW)
+// ============================================================
+function filterRaw(){
+  if(!isLoaded)return;
+  const num=(document.getElementById('raw_num')?.value||'').trim();
+  const type=document.getElementById('raw_type')?.value||'';
+  const dir=document.getElementById('raw_dir')?.value||'';
+  const from=document.getElementById('raw_from')?.value;
+  const to=document.getElementById('raw_to')?.value;
+  const hour=document.getElementById('raw_hour')?.value||'';
+
+  let data=proc.filter(r=>{
+    if(num&&!r.calling.includes(num)&&!r.called.includes(num))return false;
+    if(type&&r.type!==type)return false;
+    if(dir&&r.dir!==dir)return false;
+    if(from&&r.date&&r.date<new Date(from))return false;
+    if(to&&r.date&&r.date>new Date(to+'T23:59:59'))return false;
+    if(hour&&r.date){
+      const h=r.date.getHours();
+      if(hour==='night'&&!(h>=23||h<6))return false;
+      if(hour==='morning'&&!(h>=6&&h<12))return false;
+      if(hour==='afternoon'&&!(h>=12&&h<18))return false;
+      if(hour==='evening'&&!(h>=18&&h<23))return false;
+    }
+    return true;
+  });
+
+  document.getElementById('rawCount').textContent=`${data.length.toLocaleString()} / ${proc.length.toLocaleString()} records`;
+
+  // Quick stats
+  const qCalls=data.filter(r=>r.type==='Call'&&r.dir!=='Missed').length;
+  const qSMS=data.filter(r=>r.type==='SMS').length;
+  const qMis=data.filter(r=>r.dir==='Missed').length;
+  const qDur=data.reduce((s,r)=>s+r.duration,0);
+  document.getElementById('rawQuickStats').innerHTML=`
+    <div class="sc b"><div class="sc-ico">📞</div><div class="sc-val">${qCalls}</div><div class="sc-lbl">Calls</div></div>
+    <div class="sc g"><div class="sc-ico">💬</div><div class="sc-val">${qSMS}</div><div class="sc-lbl">SMS</div></div>
+    <div class="sc r"><div class="sc-ico">📵</div><div class="sc-val">${qMis}</div><div class="sc-lbl">Missed</div></div>
+    <div class="sc y"><div class="sc-ico">⏱️</div><div class="sc-val">${fmtDur(qDur)}</div><div class="sc-lbl">Total Duration</div></div>`;
+
+  const dirEmoji={Outgoing:'⬆️',Incoming:'⬇️',Missed:'📵'};
+  const dirCls={Outgoing:'trow-out',Incoming:'trow-in',Missed:'trow-mis'};
+
+  document.getElementById('rawBody').innerHTML=data.slice(0,600).map((r,i)=>{
+    const isSusp=r.towerType==='crime'||r.towerType==='suspicious';
+    const cStats=buildCStats();
+    const otherNum=r.calling===SUSPECT?r.called:r.calling;
+    const cs=cStats[otherNum]||{};
+    const col=TYPE_COL[cs.type]||'var(--muted)';
+    return `<tr style="${isSusp?'background:rgba(255,51,102,0.05);':''}">
+      <td style="color:var(--muted);font-size:9px">${i+1}</td>
+      <td style="font-family:var(--font-m);font-size:10px;white-space:nowrap;">
+        <div style="color:var(--text)">${r.raw_dt.split(' ')[0]}</div>
+        <div style="color:var(--acc);font-size:11px">${r.raw_dt.split(' ')[1]||''}</div>
+      </td>
+      <td style="font-family:var(--font-m);color:${r.calling===SUSPECT?'#ff8844':col}">${r.calling}</td>
+      <td style="font-family:var(--font-m);color:${r.called===SUSPECT?'#ff8844':col}">${r.called}</td>
+      <td><span class="b ${r.type==='SMS'?'bb':'bo'}">${r.type==='SMS'?'💬':'📞'} ${r.type}</span></td>
+      <td><span class="${dirCls[r.dir]||''}">${dirEmoji[r.dir]||'📞'} ${r.dir}</span></td>
+      <td style="font-family:var(--font-m)">${r.duration?fmtDur(r.duration):r.dir==='Missed'?'<span style="color:#ff3366">MISSED</span>':'-'}</td>
+      <td style="font-family:var(--font-m);font-size:9px;color:var(--muted)">${r.tower||'-'}</td>
+      <td style="font-size:10px;color:${isSusp?'#ffaa00':'var(--muted)'}">${r.towerName||'-'}</td>
+      <td style="font-size:10px;color:${col}">${cs.label||cs.type||'-'}</td>
+      <td>${isSusp?`<span class="b ${r.towerType==='crime'?'br':'by'}">${r.towerType==='crime'?'☠️ CRIME':'🚨 SUSP'}</span>`:'<span class="b bg">✓</span>'}</td>
+    </tr>`;
+  }).join('')+(data.length>600?`<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:10px;font-family:var(--font-m);font-size:10px;">⚠️ First 600 of ${data.length} shown. Use filters to narrow down.</td></tr>`:'');
+}
+function clearRaw(){['raw_num','raw_type','raw_dir','raw_from','raw_to','raw_hour'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});filterRaw();}
+function filterAndShowRaw(num){
+  document.getElementById('raw_num').value=num;
+  openTab('raw',6);
+  filterRaw();
+}
+
+// ============================================================
+// PDF REPORT
+// ============================================================
+function generateReport(){
+  if(!isLoaded){alert('⚠️ Pehle CDR file upload karo!');return;}
+  const caseNo=document.getElementById('r_case')?.value||'N/A';
+  const officer=document.getElementById('r_officer')?.value||'N/A';
+  const station=document.getElementById('r_station')?.value||'N/A';
+  const suspectNo=document.getElementById('r_suspect')?.value||SUSPECT||'N/A';
+  const now=new Date();
+
+  const total=proc.length;
+  const calls=proc.filter(r=>r.type==='Call'&&r.dir!=='Missed');
+  const sms=proc.filter(r=>r.type==='SMS');
+  const mis=proc.filter(r=>r.dir==='Missed');
+  const out=proc.filter(r=>r.dir==='Outgoing'&&r.type==='Call');
+  const inc=proc.filter(r=>r.dir==='Incoming'&&r.type==='Call');
+  const totalDur=calls.reduce((s,r)=>s+r.duration,0);
+  const cStats=buildCStats();
+  const top10=Object.values(cStats).sort((a,b)=>b.total-a.total).slice(0,10);
+  const suspC=Object.values(cStats).filter(c=>c.type==='suspicious'||c.type==='burner');
+  const dates=proc.filter(r=>r.date).map(r=>r.date);
+  const minD=dates.length?new Date(Math.min(...dates)):null;
+  const maxD=dates.length?new Date(Math.max(...dates)):null;
+  const hourC=new Array(24).fill(0);proc.forEach(r=>{if(r.date)hourC[r.date.getHours()]++;});
+  const ph=hourC.indexOf(Math.max(...hourC));
+  const nc=hourC.slice(23).concat(hourC.slice(0,6)).reduce((a,b)=>a+b,0);
+  const nPct=Math.round(nc/Math.max(total,1)*100);
+  const locRecs=proc.filter(r=>r.lat&&r.lon);
+  const crimeL=proc.filter(r=>r.towerType==='crime');
+  const suspL=proc.filter(r=>r.towerType==='suspicious');
+  const shortC=calls.filter(r=>r.duration>0&&r.duration<10).length;
+  const risk=suspC.length>0||crimeL.length>0?'HIGH':suspL.length>0||nPct>25?'MEDIUM':'LOW';
+  const rCol={HIGH:'#dc2626',MEDIUM:'#d97706',LOW:'#16a34a'}[risk];
+
+  document.getElementById('repDiv').innerHTML=`
+  <div style="font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a2e;max-width:900px;margin:0 auto;">
+    <!-- COVER -->
+    <div style="page-break-after:always;padding:40px;min-height:90vh;background:linear-gradient(135deg,#0f172a,#1a2744,#0f172a);color:#fff;display:flex;flex-direction:column;justify-content:space-between;">
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #ff6b00;padding-bottom:16px;">
+        <div><div style="font-size:10px;letter-spacing:4px;color:#7aa8cc;">GOVERNMENT OF INDIA</div>
+          <div style="font-size:15px;font-weight:700;letter-spacing:2px;color:#ff6b00;">CYBER CRIME INVESTIGATION</div></div>
+        <div style="text-align:right;font-size:10px;color:#5a7a99;"><div>🔒 CLASSIFIED</div><div>RPT-${Date.now().toString().slice(-6)}</div></div>
+      </div>
+      <div style="text-align:center;padding:44px 0;">
+        <div style="font-size:64px;margin-bottom:14px;">📞</div>
+        <div style="font-size:30px;font-weight:700;letter-spacing:6px;color:#ff6b00;margin-bottom:6px;">CDR ANALYSIS</div>
+        <div style="font-size:14px;letter-spacing:3px;color:#7aa8cc;margin-bottom:30px;">CALL DETAIL RECORD — FORENSIC REPORT</div>
+        <div style="display:inline-block;background:${rCol}22;border:2px solid ${rCol};border-radius:8px;padding:10px 28px;">
+          <div style="font-size:9px;letter-spacing:2px;color:#aaa;">RISK LEVEL</div>
+          <div style="font-size:24px;font-weight:700;color:${rCol};">${risk}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
+        ${[['CASE',caseNo],['OFFICER',officer],['STATION',station],['SUSPECT NO.',suspectNo],['PERIOD',(minD?fmtDate(minD).split(' ')[0]:'-')+' to '+(maxD?fmtDate(maxD).split(' ')[0]:'-')],['DATE',now.toLocaleDateString('en-IN')]].map(([l,v])=>`
+          <div style="background:rgba(255,107,0,0.07);border:1px solid rgba(255,107,0,0.2);border-radius:6px;padding:10px;">
+            <div style="font-size:8px;letter-spacing:2px;color:#5a7a99;margin-bottom:3px;">${l}</div>
+            <div style="font-size:12px;font-weight:600;color:#e8edf5;">${v}</div>
+          </div>`).join('')}
+      </div>
+      <div style="text-align:center;font-size:9px;color:#3a5070;border-top:1px solid #1a3050;padding-top:12px;">CDR Analysis Tool v2.0 | ${now.toLocaleString('en-IN')} | CONFIDENTIAL</div>
+    </div>
+
+    <!-- SUMMARY -->
+    <div style="page-break-after:always;padding:36px;background:#fff;">
+      <div style="border-left:6px solid #ff6b00;padding-left:16px;margin-bottom:22px;">
+        <div style="font-size:8px;letter-spacing:3px;color:#666;text-transform:uppercase;">Section 1</div>
+        <div style="font-size:20px;font-weight:700;color:#ff6b00;">Executive Summary</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px;">
+        ${[['📊','Total',total,'#ff6b00'],['📞','Calls',calls.length,'#2563eb'],['💬','SMS',sms.length,'#059669'],['📵','Missed',mis.length,'#dc2626'],['⬆️','Outgoing',out.length,'#7c3aed'],['⬇️','Incoming',inc.length,'#0891b2']].map(([ic,lb,v,col])=>`
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-top:4px solid ${col};border-radius:8px;padding:12px;text-align:center;">
+            <div>${ic}</div><div style="font-size:18px;font-weight:700;color:${col};">${v}</div>
+            <div style="font-size:9px;letter-spacing:1px;color:#64748b;text-transform:uppercase;">${lb}</div>
+          </div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;">
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;">
+          <div style="font-size:10px;font-weight:700;color:#475569;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">KEY METRICS</div>
+          <table style="width:100%;font-size:11px;border-collapse:collapse;">
+            ${[['Unique Contacts',Object.keys(cStats).length],['Total Duration',fmtDur(totalDur)],['Peak Hour',pad2(ph)+':00 hrs'],['Night Activity',nPct+'%'],['Short Calls (<10s)',shortC],['Tower Records',locRecs.length]].map(([l,v])=>`<tr><td style="padding:4px 0;color:#64748b;">${l}</td><td style="font-weight:600;">${v}</td></tr>`).join('')}
+          </table>
+        </div>
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-left:5px solid #dc2626;border-radius:8px;padding:14px;">
+          <div style="font-size:10px;font-weight:700;color:#dc2626;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">🚨 KEY FINDINGS</div>
+          <ul style="margin:0;padding-left:14px;font-size:11px;line-height:2;color:#1a1a2e;">
+            ${suspC.length>0?`<li><b>Suspicious Contacts:</b> ${suspC.length} — ${suspC.map(c=>c.num).join(', ')}</li>`:''}
+            ${crimeL.length>0?`<li><b>Crime Scene Presence:</b> ${crimeL.length} calls at crime location</li>`:''}
+            ${nPct>20?`<li><b>Night Activity:</b> ${nPct}% records 11PM-6AM</li>`:''}
+            ${shortC>10?`<li><b>Short Calls:</b> ${shortC} calls under 10 sec</li>`:''}
+            ${suspC.length===0&&crimeL.length===0?'<li>No major suspicious patterns found</li>':''}
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTACTS -->
+    <div style="padding:36px;background:#fff;">
+      <div style="border-left:6px solid #2563eb;padding-left:16px;margin-bottom:20px;">
+        <div style="font-size:8px;letter-spacing:3px;color:#666;text-transform:uppercase;">Section 2 & 3</div>
+        <div style="font-size:20px;font-weight:700;color:#2563eb;">Top Contacts + Location</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:18px;">
+        <thead><tr style="background:#1e3a5f;color:#fff;">
+          <th style="padding:8px 10px;">#</th><th style="padding:8px 10px;">Number</th><th style="padding:8px 10px;">Label</th>
+          <th style="padding:8px 10px;">Type</th><th style="padding:8px 10px;text-align:center;">Calls</th>
+          <th style="padding:8px 10px;text-align:center;">SMS</th><th style="padding:8px 10px;text-align:center;">Missed</th>
+          <th style="padding:8px 10px;">Duration</th><th style="padding:8px 10px;text-align:center;">Night</th>
+        </tr></thead>
+        <tbody>
+          ${top10.map((c,i)=>{const tc={associate:'#f97316',family:'#22c55e',suspicious:'#dc2626',burner:'#a855f7',victim:'#f59e0b',unknown:'#3b82f6'}[c.type]||'#3b82f6';
+            return `<tr style="background:${i%2===0?'#f8fafc':'#fff'}">
+              <td style="padding:7px 10px;color:#64748b;">${i+1}</td>
+              <td style="padding:7px 10px;font-family:monospace;font-weight:700;">${c.num}</td>
+              <td style="padding:7px 10px;font-size:10px;">${c.label||'-'}</td>
+              <td style="padding:7px 10px;"><span style="background:${tc}22;color:${tc};border:1px solid ${tc}44;border-radius:3px;padding:1px 6px;font-size:9px;font-weight:700;">${c.type}</span></td>
+              <td style="padding:7px 10px;text-align:center;font-weight:700;">${c.calls}</td>
+              <td style="padding:7px 10px;text-align:center;">${c.smsCount}</td>
+              <td style="padding:7px 10px;text-align:center;color:${c.mis>0?'#dc2626':'#64748b'};">${c.mis}</td>
+              <td style="padding:7px 10px;font-family:monospace;font-size:10px;">${fmtDur(c.totalDur)}</td>
+              <td style="padding:7px 10px;text-align:center;color:${c.nightCalls>5?'#dc2626':'#64748b'};font-weight:${c.nightCalls>5?700:400};">${c.nightCalls}</td>
+            </tr>`}).join('')}
+        </tbody>
+      </table>
+      ${locRecs.length>0?`
+      <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:18px;">
+        <thead><tr style="background:#064e3b;color:#fff;">
+          <th style="padding:8px 10px;">Tower/Location</th><th style="padding:8px 10px;">Type</th>
+          <th style="padding:8px 10px;text-align:center;">Calls</th><th style="padding:8px 10px;text-align:center;">SMS</th>
+          <th style="padding:8px 10px;">Coordinates</th>
+        </tr></thead>
+        <tbody>
+          ${[...new Set(locRecs.map(r=>r.towerName).filter(Boolean))].map((n,i)=>{
+            const rs=locRecs.filter(r=>r.towerName===n);const t=rs[0];
+            const tc={crime:'#dc2626',suspicious:'#d97706',home:'#059669',work:'#2563eb'}[t.towerType]||'#475569';
+            return `<tr style="background:${i%2===0?'#f0fdf4':'#fff'}">
+              <td style="padding:7px 10px;font-weight:600;">${n}</td>
+              <td style="padding:7px 10px;"><span style="background:${tc}22;color:${tc};border:1px solid ${tc}44;border-radius:3px;padding:1px 6px;font-size:9px;font-weight:700;text-transform:uppercase;">${t.towerType}</span></td>
+              <td style="padding:7px 10px;text-align:center;">${rs.filter(r=>r.type==='Call').length}</td>
+              <td style="padding:7px 10px;text-align:center;">${rs.filter(r=>r.type==='SMS').length}</td>
+              <td style="padding:7px 10px;font-family:monospace;font-size:10px;">${t.lat?.toFixed(4)||'-'}, ${t.lon?.toFixed(4)||'-'}</td>
+            </tr>`}).join('')}
+        </tbody>
+      </table>`:''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-top:50px;">
+        <div><div style="border-top:2px solid #1a1a2e;padding-top:8px;margin-top:56px;">
+          <div style="font-weight:700;font-size:12px;">${officer}</div>
+          <div style="color:#64748b;font-size:11px;">${station} | ${now.toLocaleDateString('en-IN')}</div>
+        </div></div>
+        <div><div style="border-top:2px solid #1a1a2e;padding-top:8px;margin-top:56px;">
+          <div style="font-weight:700;font-size:12px;">Supervisor / SP Cyber Crime</div>
+          <div style="color:#64748b;font-size:11px;">Date: _______________</div>
+        </div></div>
+      </div>
+      <div style="text-align:center;margin-top:24px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:9px;color:#94a3b8;">
+        CDR ANALYSIS TOOL v2.0 | Case: ${caseNo} | ${now.toLocaleString('en-IN')} | CONFIDENTIAL
+      </div>
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// DEMO DATA
+// ============================================================
+function loadDemo(){
+  const nums=['9876543210','9811223344','9922334455','9733445566','7288990011','8377889900','9001234567','9098765432','6199001122'];
+  const labels=['SUSPECT','Associate A (Raju)','Associate B (Salim)','Family - Wife','Burner Phone 1','Suspicious - PK Contact','Victim','Unknown Contact','Burner Phone 2'];
+  const tTypes=['work','home','suspicious','crime','transit'];
+  const towers=[
+    {id:'DL-CP-001',name:'Connaught Place Delhi',type:'work',lat:28.6315,lon:77.2167},
+    {id:'UP-NOI-015',name:'Sector 15 Noida (Home)',type:'home',lat:28.585,lon:77.31},
+    {id:'DL-SB-007',name:'Sadar Bazar Delhi',type:'suspicious',lat:28.6562,lon:77.2134},
+    {id:'DL-LN-001',name:'Lajpat Nagar (Crime Scene)',type:'crime',lat:28.5677,lon:77.2437},
+    {id:'UP-NOI-018',name:'Sector 18 Noida',type:'transit',lat:28.5706,lon:77.3219},
+  ];
+
+  const rows=[];const base=new Date('2024-11-01');
+  for(let d=0;d<30;d++){
+    const dt=new Date(base.getTime()+d*86400000);
+    const wd=dt.getDay();const crimeDay=d===14;
+    for(let h=0;h<24;h++){
+      const isN=h<6||h>=23;const isW=h>=9&&h<=17&&wd>0&&wd<6;
+      let n=isN?Math.random()<0.25?Math.floor(Math.random()*4):0:isW?Math.floor(Math.random()*8)+2:Math.floor(Math.random()*4)+1;
+      if(crimeDay&&h>=21)n+=Math.floor(Math.random()*8)+5;
+      for(let i=0;i<n;i++){
+        const min=Math.floor(Math.random()*60),sec=Math.floor(Math.random()*60);
+        const cdt=new Date(dt.getFullYear(),dt.getMonth(),dt.getDate(),h,min,sec);
+        const ti=crimeDay&&h>=21?3:isW&&wd>0&&wd<6?0:isN?1:Math.random()<0.15?2:0;
+        const t=towers[ti];
+        const ci=crimeDay&&h>=21&&Math.random()<0.4?Math.floor(Math.random()*2)+1:Math.floor(Math.random()*6)+1;
+        const contact=nums[Math.min(ci,nums.length-1)];
+        const allDirs=['Outgoing','Outgoing','Incoming','Incoming','Missed'];
+        const dir=allDirs[Math.floor(Math.random()*allDirs.length)];
+        const type=Math.random()<0.2?'SMS':'Call';
+        const dur=dir==='Missed'||type==='SMS'?0:Math.floor(Math.random()*600)+5;
+        rows.push({
+          Date_Time:cdt.toISOString().replace('T',' ').slice(0,19),
+          Calling_Number:dir==='Outgoing'?nums[0]:contact,
+          Called_Number:dir==='Outgoing'?contact:nums[0],
+          Type:type,Direction:dir,Duration_Sec:dur,
+          IMEI:'358239053280934',
+          Cell_Tower_ID:t.id,Tower_Name:t.name,Tower_Type:t.type,
+          Latitude:+(t.lat+(Math.random()-0.5)*0.004).toFixed(6),
+          Longitude:+(t.lon+(Math.random()-0.5)*0.004).toFixed(6),
+          Contact_Label:labels[Math.min(ci,labels.length-1)],
+        });
+      }
+    }
+  }
+  rows.sort((a,b)=>a.Date_Time.localeCompare(b.Date_Time));
+  raw=rows;cols=Object.keys(rows[0]);showMapper();
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function dChart(id,type,data,opts){
+  if(chts[id]){chts[id].destroy();delete chts[id];}
+  const ctx=document.getElementById(id)?.getContext('2d');
+  if(!ctx)return;
+  chts[id]=new Chart(ctx,{type,data,options:{...opts,maintainAspectRatio:true}});
+}
+function fmtDur(s){if(!s||s<=0)return '0s';if(s<60)return s+'s';if(s<3600)return Math.floor(s/60)+'m '+Math.floor(s%60)+'s';return Math.floor(s/3600)+'h '+Math.floor((s%3600)/60)+'m';}
+function fmtDate(d){if(!d)return '-';return d.toLocaleDateString('en-IN')+' '+d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});}
+function pad2(n){return String(n).padStart(2,'0');}
+function getWk(d){return Math.ceil((((d-new Date(d.getFullYear(),0,1))/86400000)+new Date(d.getFullYear(),0,1).getDay()+1)/7);}
+function showL(t){document.getElementById('ltxt').textContent=t;document.getElementById('lov').classList.add('show');}
+function hideL(){document.getElementById('lov').classList.remove('show');}
+</script>
+</body>
+</html>

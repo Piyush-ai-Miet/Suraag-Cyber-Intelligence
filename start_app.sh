@@ -8,7 +8,7 @@ sleep 1
 
 # Start streamlit in background
 cd "$(dirname "$0")"
-nohup python -m streamlit run app.py --server.port 8509 --server.headless true > streamlit.log 2>&1 &
+nohup python3 -m streamlit run app.py --server.port 8509 --server.headless true > streamlit.log 2>&1 &
 
 # Wait for server to start
 sleep 5

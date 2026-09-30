@@ -1,0 +1,3561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suराग - IPDR Analysis | Cyber Investigation Platform</title>
+
+<!-- External Libraries via CDN -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg-primary: #080c14;
+  --bg-secondary: #0d1420;
+  --bg-card: #111827;
+  --bg-card2: #0f1a2e;
+  --border: #1e3a5f;
+  --border-glow: #00d4ff;
+  --accent: #00d4ff;
+  --accent2: #ff6b35;
+  --accent3: #39ff14;
+  --accent4: #ff3366;
+  --text-primary: #e0f4ff;
+  --text-secondary: #7aa8cc;
+  --text-muted: #4a7090;
+  --danger: #ff3366;
+  --warning: #ffaa00;
+  --success: #39ff14;
+  --font-mono: 'Share Tech Mono', monospace;
+  --font-head: 'Rajdhani', sans-serif;
+  --font-body: 'Exo 2', sans-serif;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scanline effect */
+body::before {
+  content:'';
+  position:fixed;
+  top:0; left:0; right:0; bottom:0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.015) 2px, rgba(0,212,255,0.015) 4px);
+  pointer-events:none;
+  z-index:9999;
+}
+
+/* ===== HEADER ===== */
+.header {
+  background: linear-gradient(135deg, #080c14 0%, #0d1a2e 50%, #080c14 100%);
+  border-bottom: 2px solid var(--border-glow);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 70px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 4px 30px rgba(0,212,255,0.15);
+}
+
+.logo {
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+
+.logo-icon {
+  width:44px; height:44px;
+  border:2px solid var(--accent);
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
+  box-shadow: 0 0 15px rgba(0,212,255,0.4);
+  animation: pulse 3s infinite;
+}
+
+@keyframes pulse {
+  0%,100%{ box-shadow:0 0 15px rgba(0,212,255,0.4); }
+  50%{ box-shadow:0 0 30px rgba(0,212,255,0.8); }
+}
+
+.logo-text h1 {
+  font-family: var(--font-head);
+  font-size:22px;
+  font-weight:700;
+  letter-spacing:3px;
+  color:var(--accent);
+  text-shadow:0 0 20px rgba(0,212,255,0.5);
+}
+
+.logo-text span {
+  font-family:var(--font-mono);
+  font-size:10px;
+  color:var(--text-muted);
+  letter-spacing:2px;
+}
+
+.header-right {
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+
+.status-badge {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--text-muted);
+}
+
+.status-dot {
+  width:8px; height:8px;
+  border-radius:50%;
+  background:var(--success);
+  animation: blink 1.5s infinite;
+  box-shadow:0 0 8px var(--success);
+}
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+#current-time {
+  font-family:var(--font-mono);
+  font-size:12px;
+  color:var(--accent);
+  letter-spacing:1px;
+}
+
+/* ===== NAV TABS ===== */
+.nav-tabs {
+  display:flex;
+  gap:2px;
+  background:var(--bg-secondary);
+  border-bottom:1px solid var(--border);
+  padding:0 24px;
+  overflow-x:auto;
+}
+
+.nav-tab {
+  padding:14px 24px;
+  font-family:var(--font-head);
+  font-size:13px;
+  font-weight:600;
+  letter-spacing:2px;
+  color:var(--text-muted);
+  cursor:pointer;
+  border-bottom:3px solid transparent;
+  transition:all 0.3s;
+  white-space:nowrap;
+  text-transform:uppercase;
+  background:none;
+  border-top:none;
+  border-left:none;
+  border-right:none;
+}
+
+.nav-tab:hover { color:var(--text-primary); }
+.nav-tab.active {
+  color:var(--accent);
+  border-bottom-color:var(--accent);
+  background:rgba(0,212,255,0.05);
+  text-shadow:0 0 10px rgba(0,212,255,0.4);
+}
+
+/* ===== MAIN CONTENT ===== */
+.main { padding:24px; }
+
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
+/* ===== UPLOAD ZONE ===== */
+.upload-zone {
+  border:2px dashed var(--border);
+  border-radius:12px;
+  padding:60px;
+  text-align:center;
+  cursor:pointer;
+  transition:all 0.3s;
+  background: linear-gradient(135deg, rgba(0,212,255,0.02), rgba(0,212,255,0.05));
+  margin-bottom:24px;
+}
+
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color:var(--accent);
+  background:rgba(0,212,255,0.08);
+  box-shadow:0 0 30px rgba(0,212,255,0.2);
+}
+
+.upload-icon { font-size:60px; margin-bottom:16px; }
+.upload-zone h2 {
+  font-family:var(--font-head);
+  font-size:20px;
+  letter-spacing:3px;
+  color:var(--accent);
+  margin-bottom:8px;
+}
+.upload-zone p { color:var(--text-muted); font-size:13px; margin-bottom:20px; }
+.upload-zone input { display:none; }
+
+/* ===== BUTTONS ===== */
+.btn {
+  padding:10px 24px;
+  border:none;
+  border-radius:6px;
+  font-family:var(--font-head);
+  font-size:13px;
+  font-weight:600;
+  letter-spacing:2px;
+  cursor:pointer;
+  transition:all 0.3s;
+  text-transform:uppercase;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #0066cc, #00d4ff);
+  color:#fff;
+  box-shadow:0 4px 15px rgba(0,212,255,0.3);
+}
+.btn-primary:hover {
+  box-shadow:0 6px 25px rgba(0,212,255,0.5);
+  transform:translateY(-1px);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #cc0033, #ff3366);
+  color:#fff;
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #005500, #39ff14);
+  color:#000;
+}
+
+.btn-warning {
+  background: linear-gradient(135deg, #cc6600, #ffaa00);
+  color:#000;
+}
+
+.btn-sm { padding:6px 14px; font-size:11px; }
+
+/* ===== STATS GRID ===== */
+.stats-grid {
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap:16px;
+  margin-bottom:24px;
+}
+
+.stat-card {
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:20px;
+  position:relative;
+  overflow:hidden;
+  transition:all 0.3s;
+}
+
+.stat-card::before {
+  content:'';
+  position:absolute;
+  top:0; left:0; right:0;
+  height:2px;
+}
+.stat-card.blue::before { background:linear-gradient(90deg, #0066cc, #00d4ff); }
+.stat-card.red::before { background:linear-gradient(90deg, #cc0033, #ff3366); }
+.stat-card.green::before { background:linear-gradient(90deg, #005500, #39ff14); }
+.stat-card.orange::before { background:linear-gradient(90deg, #cc6600, #ffaa00); }
+.stat-card.purple::before { background:linear-gradient(90deg, #5500cc, #aa00ff); }
+
+.stat-card:hover {
+  border-color:var(--accent);
+  box-shadow:0 4px 20px rgba(0,212,255,0.15);
+  transform:translateY(-2px);
+}
+
+.stat-icon { font-size:28px; margin-bottom:12px; }
+.stat-value {
+  font-family:var(--font-mono);
+  font-size:28px;
+  font-weight:700;
+  color:var(--accent);
+  margin-bottom:4px;
+}
+.stat-label {
+  font-size:11px;
+  letter-spacing:2px;
+  color:var(--text-muted);
+  text-transform:uppercase;
+}
+
+/* ===== CARDS ===== */
+.card {
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:20px;
+  margin-bottom:20px;
+}
+
+.card-header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:16px;
+  padding-bottom:12px;
+  border-bottom:1px solid var(--border);
+}
+
+.card-title {
+  font-family:var(--font-head);
+  font-size:14px;
+  font-weight:600;
+  letter-spacing:3px;
+  color:var(--accent);
+  text-transform:uppercase;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+/* ===== MAP ===== */
+#map {
+  height:550px;
+  border-radius:10px;
+  border:1px solid var(--border);
+}
+
+/* ===== TABLES ===== */
+.data-table {
+  width:100%;
+  border-collapse:collapse;
+  font-family:var(--font-mono);
+  font-size:12px;
+}
+
+.data-table th {
+  background:rgba(0,212,255,0.1);
+  color:var(--accent);
+  padding:10px 14px;
+  text-align:left;
+  font-family:var(--font-head);
+  font-size:11px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  border-bottom:2px solid var(--border);
+}
+
+.data-table td {
+  padding:9px 14px;
+  border-bottom:1px solid rgba(30,58,95,0.4);
+  color:var(--text-primary);
+  font-size:12px;
+}
+
+.data-table tr:hover td {
+  background:rgba(0,212,255,0.04);
+}
+
+.data-table tbody tr:nth-child(even) td {
+  background:rgba(13,20,32,0.5);
+}
+
+.table-wrap {
+  overflow-x:auto;
+  max-height:400px;
+  overflow-y:auto;
+  border-radius:8px;
+  border:1px solid var(--border);
+}
+
+.table-wrap::-webkit-scrollbar { width:6px; height:6px; }
+.table-wrap::-webkit-scrollbar-track { background:var(--bg-primary); }
+.table-wrap::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+/* ===== BADGES ===== */
+.badge {
+  display:inline-block;
+  padding:3px 10px;
+  border-radius:4px;
+  font-size:10px;
+  font-family:var(--font-mono);
+  font-weight:700;
+  letter-spacing:1px;
+  text-transform:uppercase;
+}
+.badge-danger { background:rgba(255,51,102,0.15); color:#ff3366; border:1px solid rgba(255,51,102,0.3); }
+.badge-warning { background:rgba(255,170,0,0.15); color:#ffaa00; border:1px solid rgba(255,170,0,0.3); }
+.badge-success { background:rgba(57,255,20,0.1); color:#39ff14; border:1px solid rgba(57,255,20,0.3); }
+.badge-info { background:rgba(0,212,255,0.1); color:#00d4ff; border:1px solid rgba(0,212,255,0.3); }
+
+/* ===== FILTER BAR ===== */
+.filter-bar {
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  padding:14px 18px;
+  background:var(--bg-secondary);
+  border:1px solid var(--border);
+  border-radius:8px;
+  margin-bottom:20px;
+}
+
+.filter-bar label {
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--text-muted);
+  letter-spacing:1px;
+}
+
+.filter-bar select, .filter-bar input {
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  color:var(--text-primary);
+  padding:7px 12px;
+  border-radius:5px;
+  font-family:var(--font-mono);
+  font-size:12px;
+  outline:none;
+  cursor:pointer;
+}
+
+.filter-bar select:focus, .filter-bar input:focus {
+  border-color:var(--accent);
+  box-shadow:0 0 8px rgba(0,212,255,0.2);
+}
+
+/* ===== CHARTS GRID ===== */
+.charts-grid {
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:20px;
+  margin-bottom:20px;
+}
+
+@media(max-width:900px){ .charts-grid{ grid-template-columns:1fr; } }
+
+.chart-card {
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:20px;
+}
+
+.chart-card canvas { max-height:280px; }
+
+/* ===== TIMELINE ===== */
+.timeline-bar {
+  height:6px;
+  background:var(--bg-secondary);
+  border-radius:3px;
+  overflow:hidden;
+  margin-top:6px;
+}
+.timeline-bar-fill {
+  height:100%;
+  border-radius:3px;
+  background: linear-gradient(90deg, #0066cc, #00d4ff);
+  transition:width 0.5s ease;
+}
+
+/* ===== HEATMAP ===== */
+.heatmap-grid {
+  display:grid;
+  grid-template-columns: 60px repeat(24, 1fr);
+  gap:3px;
+  font-family:var(--font-mono);
+  font-size:10px;
+}
+
+.heatmap-cell {
+  width:100%;
+  padding-top:100%;
+  border-radius:3px;
+  position:relative;
+  transition:transform 0.2s;
+}
+
+.heatmap-cell:hover { transform:scale(1.5); z-index:10; }
+
+.heatmap-label {
+  display:flex;
+  align-items:center;
+  color:var(--text-muted);
+  font-size:10px;
+  padding-top: 50%;
+  transform: translateY(-50%);
+}
+
+/* ===== VPN FLAGS ===== */
+.vpn-alert {
+  background: rgba(255,51,102,0.08);
+  border:1px solid rgba(255,51,102,0.3);
+  border-left:4px solid #ff3366;
+  border-radius:8px;
+  padding:14px 18px;
+  margin-bottom:12px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+
+.vpn-alert .alert-icon { font-size:24px; }
+.vpn-alert .alert-body { flex:1; }
+.vpn-alert .alert-title {
+  font-family:var(--font-head);
+  font-size:13px;
+  font-weight:700;
+  color:#ff3366;
+  letter-spacing:1px;
+  margin-bottom:4px;
+}
+.vpn-alert .alert-detail {
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--text-secondary);
+}
+
+/* ===== LOADING ===== */
+.loading-overlay {
+  display:none;
+  position:fixed;
+  top:0; left:0; right:0; bottom:0;
+  background:rgba(8,12,20,0.9);
+  z-index:9998;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:20px;
+}
+
+.loading-overlay.show { display:flex; }
+
+.loading-spinner {
+  width:60px; height:60px;
+  border:3px solid var(--border);
+  border-top-color:var(--accent);
+  border-radius:50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+
+.loading-text {
+  font-family:var(--font-mono);
+  font-size:14px;
+  color:var(--accent);
+  letter-spacing:2px;
+}
+
+/* ===== REPORT ===== */
+.report-section {
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:30px;
+  margin-bottom:20px;
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width:8px; }
+::-webkit-scrollbar-track { background:var(--bg-primary); }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+
+/* ===== PROGRESS BAR ===== */
+.progress-wrap {
+  background:var(--bg-secondary);
+  border-radius:4px;
+  height:8px;
+  overflow:hidden;
+  margin-top:4px;
+}
+.progress-fill {
+  height:100%;
+  border-radius:4px;
+  transition:width 0.5s;
+}
+
+/* ===== COLUMN MAPPER ===== */
+.col-mapper {
+  display:grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap:12px;
+  margin-bottom:20px;
+}
+
+.col-mapper-item label {
+  display:block;
+  font-family:var(--font-mono);
+  font-size:10px;
+  color:var(--text-muted);
+  letter-spacing:1px;
+  margin-bottom:6px;
+  text-transform:uppercase;
+}
+
+.col-mapper-item select {
+  width:100%;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  color:var(--text-primary);
+  padding:8px 12px;
+  border-radius:5px;
+  font-family:var(--font-mono);
+  font-size:12px;
+  outline:none;
+}
+
+/* ===== SECTION TITLE ===== */
+.section-title {
+  font-family:var(--font-head);
+  font-size:16px;
+  font-weight:700;
+  letter-spacing:3px;
+  color:var(--accent);
+  text-transform:uppercase;
+  margin-bottom:18px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.section-title::after {
+  content:'';
+  flex:1;
+  height:1px;
+  background:linear-gradient(90deg, var(--border), transparent);
+}
+
+/* ===== NOTICE ===== */
+.notice {
+  background:rgba(0,212,255,0.05);
+  border:1px solid rgba(0,212,255,0.2);
+  border-left:4px solid var(--accent);
+  border-radius:8px;
+  padding:14px 18px;
+  font-family:var(--font-mono);
+  font-size:12px;
+  color:var(--text-secondary);
+  margin-bottom:20px;
+}
+
+/* ===== INFO GRID ===== */
+.info-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:12px;
+}
+
+.info-item {
+  background:var(--bg-secondary);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:12px;
+}
+.info-item .info-label {
+  font-family:var(--font-mono);
+  font-size:9px;
+  color:var(--text-muted);
+  letter-spacing:1px;
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+.info-item .info-val {
+  font-family:var(--font-mono);
+  font-size:13px;
+  color:var(--text-primary);
+  word-break:break-all;
+}
+
+/* PRINT STYLES */
+@media print {
+  .nav-tabs, .header, .btn, .filter-bar, .upload-zone, #colMapper { display:none!important; }
+  body { background:#fff; color:#000; font-family:'Segoe UI',Arial,sans-serif; }
+  body::before { display:none; }
+  .tab-content { display:block!important; }
+  #tab-dashboard, #tab-mapview, #tab-timeline, #tab-vpn, #tab-habits, #tab-social, #tab-location, #tab-rawdata { display:none!important; }
+  #tab-report { display:block!important; }
+  #printReport { display:block!important; }
+  @page { margin:0; size:A4; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loadingText">PROCESSING DATA...</div>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">🔍</div>
+    <div class="logo-text">
+      <h1>Suराग - IPDR ANALYSIS</h1>
+      <span>CYBER INVESTIGATION PLATFORM</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="status-badge">
+      <div class="status-dot"></div>
+      SYSTEM ACTIVE
+    </div>
+    <div id="current-time">--:--:--</div>
+    <button class="btn btn-success btn-sm" onclick="exportReport()">📄 EXPORT REPORT</button>
+  </div>
+</div>
+
+<!-- NAV TABS -->
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
+  <button class="nav-tab" onclick="showTab('mapview')">🗺️ Map View</button>
+  <button class="nav-tab" onclick="showTab('timeline')">📈 Timeline</button>
+  <button class="nav-tab" onclick="showTab('vpn')">🔐 VPN / Proxy</button>
+  <button class="nav-tab" onclick="showTab('habits')">🕐 Working Habits</button>
+  <button class="nav-tab" onclick="showTab('social')">📱 Social Media</button>
+  <button class="nav-tab" onclick="showTab('location')">📍 Location Track</button>
+  <button class="nav-tab" onclick="showTab('rawdata')">📋 Raw Data</button>
+  <button class="nav-tab" onclick="showTab('report')">📑 PDF Report</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- ====== DASHBOARD TAB ====== -->
+  <div class="tab-content active" id="tab-dashboard">
+
+    <!-- Upload Zone -->
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">📁</div>
+      <h2>UPLOAD IPDR FILE</h2>
+      <p>Drag & Drop ya Click karke file select karo | CSV aur Excel (.xlsx, .xls) supported</p>
+      <button class="btn btn-primary" type="button">📂 FILE SELECT KARO</button>
+      <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" onchange="handleFileUpload(event)">
+    </div>
+
+    <!-- Column Mapper (hidden initially) -->
+    <div id="colMapper" style="display:none;" class="card">
+      <div class="card-header">
+        <div class="card-title">⚙️ COLUMN MAPPING — Apne IPDR columns select karo</div>
+        <button class="btn btn-primary btn-sm" onclick="processData()">▶ ANALYSE KARO</button>
+      </div>
+      <div class="col-mapper" id="colMapperGrid"></div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <!-- Info Cards -->
+    <div class="charts-grid" id="dashCharts" style="display:none;">
+      <div class="chart-card">
+        <div class="card-title" style="margin-bottom:14px;">📡 TOP DESTINATION IPs</div>
+        <canvas id="topIPsChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="card-title" style="margin-bottom:14px;">📊 PORT USAGE</div>
+        <canvas id="portChart"></canvas>
+      </div>
+    </div>
+
+    <div id="topIPsTable" style="display:none;">
+      <div class="section-title">🎯 TOP CONNECTIONS</div>
+      <div class="table-wrap">
+        <table class="data-table" id="topIPsTableEl">
+          <thead><tr>
+            <th>#</th><th>Destination IP</th><th>Country</th><th>ISP/Org</th><th>Connections</th><th>Data</th><th>Status</th>
+          </tr></thead>
+          <tbody id="topIPsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ====== MAP TAB ====== -->
+  <div class="tab-content" id="tab-mapview">
+    <div class="filter-bar">
+      <label>TIME FILTER:</label>
+      <select id="mapTimeFilter" onchange="updateMap()">
+        <option value="all">All Data</option>
+        <option value="1d">Last 1 Day</option>
+        <option value="7d">Last 7 Days</option>
+        <option value="30d">Last 30 Days</option>
+        <option value="custom">Custom Range</option>
+      </select>
+      <input type="date" id="mapDateFrom" style="display:none;" onchange="updateMap()">
+      <input type="date" id="mapDateTo" style="display:none;" onchange="updateMap()">
+      <label>SHOW:</label>
+      <select id="mapShowFilter" onchange="updateMap()">
+        <option value="all">All IPs</option>
+        <option value="suspicious">Suspicious Only</option>
+        <option value="foreign">Foreign Only</option>
+        <option value="vpn">VPN/Proxy Only</option>
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="updateMap()">🗺️ REFRESH MAP</button>
+      <button class="btn btn-warning btn-sm" onclick="fitMapBounds()">⊞ FIT ALL</button>
+    </div>
+
+    <div class="notice" id="mapApiNotice">
+      ✅ Offline Mode — Built-in IP Database use ho rahi hai (500+ known IPs). Pehle Dashboard mein file upload karo, phir yahan aao.
+    </div>
+
+    <div id="map"></div>
+
+    <div style="margin-top:16px; display:flex; gap:16px; flex-wrap:wrap;" id="mapLegend">
+      <span>🔴 Suspicious IP</span>
+      <span>🟡 Foreign IP</span>
+      <span>🟢 Normal</span>
+      <span>🟣 VPN/Proxy</span>
+      <span>🔵 India</span>
+    </div>
+  </div>
+
+  <!-- ====== TIMELINE TAB ====== -->
+  <div class="tab-content" id="tab-timeline">
+    <div class="filter-bar">
+      <label>VIEW BY:</label>
+      <select id="timelineView" onchange="renderTimeline()">
+        <option value="hour">Hourly</option>
+        <option value="day">Daily</option>
+        <option value="week">Weekly</option>
+        <option value="month">Monthly</option>
+      </select>
+      <label>PERIOD:</label>
+      <select id="timelinePeriod" onchange="renderTimeline()">
+        <option value="all">All Data</option>
+        <option value="1d">Last 1 Day</option>
+        <option value="7d">Last 7 Days</option>
+        <option value="30d">Last 30 Days</option>
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="renderTimeline()">📈 UPDATE</button>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card" style="grid-column:span 2">
+        <div class="card-title" style="margin-bottom:14px;">📈 CONNECTION TIMELINE</div>
+        <canvas id="timelineChart" style="max-height:300px;"></canvas>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="card-title" style="margin-bottom:14px;">📊 DATA VOLUME (MB)</div>
+        <canvas id="dataVolumeChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="card-title" style="margin-bottom:14px;">🌍 COUNTRY DISTRIBUTION</div>
+        <canvas id="countryChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Period Stats -->
+    <div class="section-title">📅 PERIOD SUMMARY</div>
+    <div class="stats-grid" id="periodStats"></div>
+  </div>
+
+  <!-- ====== VPN / PROXY TAB ====== -->
+  <div class="tab-content" id="tab-vpn">
+    <div class="stats-grid" id="vpnStats"></div>
+
+    <div class="section-title">⚠️ VPN / PROXY DETECTED CONNECTIONS</div>
+    <div id="vpnAlerts"></div>
+
+    <div class="section-title" style="margin-top:24px;">🚩 SUSPICIOUS PORT ACTIVITY</div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr>
+          <th>Port</th><th>Protocol</th><th>Service</th><th>Risk Level</th><th>Connections</th><th>Action</th>
+        </tr></thead>
+        <tbody id="portAlertsBody"></tbody>
+      </table>
+    </div>
+
+    <div class="section-title" style="margin-top:24px;">🌐 FOREIGN/SUSPICIOUS SERVERS</div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr>
+          <th>Destination IP</th><th>Country</th><th>ASN / ISP</th><th>Category</th><th>First Seen</th><th>Last Seen</th><th>Count</th>
+        </tr></thead>
+        <tbody id="suspiciousBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ====== WORKING HABITS TAB ====== -->
+  <div class="tab-content" id="tab-habits">
+    <div class="stats-grid" id="habitsStats"></div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🕐 HOURLY ACTIVITY HEATMAP (Hour vs Day)</div>
+      </div>
+      <div style="overflow-x:auto; padding:10px 0;">
+        <div id="heatmapContainer"></div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="card-title" style="margin-bottom:14px;">⏰ ACTIVE HOURS (Avg connections/hour)</div>
+        <canvas id="activeHoursChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="card-title" style="margin-bottom:14px;">📅 DAY OF WEEK ACTIVITY</div>
+        <canvas id="dayOfWeekChart"></canvas>
+      </div>
+    </div>
+
+    <div class="section-title">📌 TOP WORKING PATTERNS</div>
+    <div id="patternsDiv"></div>
+  </div>
+
+  <!-- ====== SOCIAL MEDIA TAB ====== -->
+  <div class="tab-content" id="tab-social">
+
+    <div class="stats-grid" id="socialStats"></div>
+
+    <!-- App Usage Cards -->
+    <div class="section-title">📱 DETECTED SOCIAL MEDIA APPS</div>
+    <div id="socialAppsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:24px;"></div>
+
+    <!-- Timeline Chart -->
+    <div class="charts-grid">
+      <div class="chart-card" style="grid-column:span 2">
+        <div class="card-title" style="margin-bottom:14px;">📈 SOCIAL MEDIA USAGE — HOURLY TIMELINE</div>
+        <canvas id="socialTimelineChart" style="max-height:280px;"></canvas>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="card-title" style="margin-bottom:14px;">🥧 APP USAGE SHARE (Data Volume)</div>
+        <canvas id="socialPieChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="card-title" style="margin-bottom:14px;">📊 SESSIONS PER APP</div>
+        <canvas id="socialBarChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Criminal Behavioral Analysis -->
+    <div class="section-title">🚨 BEHAVIORAL ANALYSIS — CRIME ANGLE</div>
+    <div id="crimeAnalysis"></div>
+
+    <!-- Detailed session table -->
+    <div class="section-title" style="margin-top:24px;">📋 SOCIAL MEDIA SESSION LOG</div>
+    <div class="filter-bar">
+      <label>APP FILTER:</label>
+      <select id="socialAppFilter" onchange="filterSocialTable()">
+        <option value="">All Apps</option>
+      </select>
+      <label>TIME:</label>
+      <select id="socialTimeFilter" onchange="filterSocialTable()">
+        <option value="all">All</option>
+        <option value="1d">Last 1 Day</option>
+        <option value="7d">Last 7 Days</option>
+        <option value="30d">Last 30 Days</option>
+      </select>
+      <label>SHOW:</label>
+      <select id="socialShowFilter" onchange="filterSocialTable()">
+        <option value="all">All Sessions</option>
+        <option value="night">Night Only (11PM-6AM)</option>
+        <option value="heavy">Heavy Data (>1MB)</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr>
+          <th>App</th><th>Timestamp</th><th>Dest IP</th><th>Port</th>
+          <th>Duration</th><th>Download</th><th>Upload</th><th>Suspicious?</th>
+        </tr></thead>
+        <tbody id="socialTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ====== LOCATION TRACKING TAB ====== -->
+  <div class="tab-content" id="tab-location">
+
+    <div class="stats-grid" id="locationStats"></div>
+
+    <div class="filter-bar">
+      <label>TIME FILTER:</label>
+      <select id="locTimeFilter" onchange="renderLocationMap()">
+        <option value="all">All Data</option>
+        <option value="1d">Last 1 Day</option>
+        <option value="7d">Last 7 Days</option>
+        <option value="30d">Last 30 Days</option>
+      </select>
+      <label>SHOW:</label>
+      <select id="locTypeFilter" onchange="renderLocationMap()">
+        <option value="all">All Locations</option>
+        <option value="home">Home Area</option>
+        <option value="work">Work Area</option>
+        <option value="suspicious">Suspicious</option>
+        <option value="crime">Crime Scene</option>
+      </select>
+      <label>DATE:</label>
+      <input type="date" id="locSpecificDate" onchange="renderLocationMap()">
+      <button class="btn btn-primary btn-sm" onclick="renderLocationMap()">📍 UPDATE MAP</button>
+      <button class="btn btn-warning btn-sm" onclick="fitLocMap()">⊞ FIT ALL</button>
+      <button class="btn btn-danger btn-sm" onclick="showMovementTrail()">🛤️ TRAIL DEKHO</button>
+    </div>
+
+    <div class="notice" id="locNotice">
+      ℹ️ Agar IPDR mein Latitude/Longitude columns hain to yeh automatically plot honge. 
+      Nahi hain to Cell Tower ID se location detect karne ki koshish hogi.
+    </div>
+
+    <div id="locationMap" style="height:500px;border-radius:10px;border:1px solid var(--border);margin-bottom:20px;"></div>
+
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;font-family:var(--font-mono);font-size:11px;">
+      <span>🏠 Home Area</span>
+      <span>🏢 Work/Office</span>
+      <span>🚨 Suspicious Location</span>
+      <span>☠️ Crime Scene</span>
+      <span>🚌 Transit</span>
+      <span>❓ Unknown</span>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="card-title" style="margin-bottom:14px;">🗓️ LOCATION BY DAY OF WEEK</div>
+        <canvas id="locDayChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="card-title" style="margin-bottom:14px;">🕐 LOCATION BY HOUR</div>
+        <canvas id="locHourChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Location Intelligence -->
+    <div class="section-title">🔎 LOCATION INTELLIGENCE — FINDINGS</div>
+    <div id="locIntelDiv"></div>
+
+    <!-- Location Log Table -->
+    <div class="section-title" style="margin-top:20px;">📋 LOCATION SESSION LOG</div>
+    <div class="table-wrap" style="max-height:350px;">
+      <table class="data-table">
+        <thead><tr>
+          <th>Timestamp</th><th>Location Name</th><th>Latitude</th><th>Longitude</th>
+          <th>Cell Tower</th><th>Type</th><th>App Used</th><th>Data</th>
+        </tr></thead>
+        <tbody id="locTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ====== RAW DATA TAB ====== -->
+  <div class="tab-content" id="tab-rawdata">
+    <div class="filter-bar">
+      <label>SEARCH IP:</label>
+      <input type="text" id="searchIP" placeholder="192.168.x.x" oninput="filterTable()">
+      <label>PORT:</label>
+      <input type="text" id="searchPort" placeholder="443" style="width:80px;" oninput="filterTable()">
+      <label>DATE FROM:</label>
+      <input type="date" id="rawDateFrom" onchange="filterTable()">
+      <label>DATE TO:</label>
+      <input type="date" id="rawDateTo" onchange="filterTable()">
+      <label>COUNTRY:</label>
+      <select id="rawCountryFilter" onchange="filterTable()">
+        <option value="">All Countries</option>
+      </select>
+      <button class="btn btn-danger btn-sm" onclick="clearFilters()">✕ CLEAR</button>
+      <span id="rowCount" style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-left:8px;"></span>
+    </div>
+
+    <div class="table-wrap" style="max-height:600px;">
+      <table class="data-table" id="rawTable">
+        <thead id="rawTableHead"></thead>
+        <tbody id="rawTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ====== REPORT TAB ====== -->
+  <div class="tab-content" id="tab-report">
+    <div class="filter-bar">
+      <label>CASE NO:</label>
+      <input type="text" id="caseNumber" placeholder="CR/2024/001" style="width:130px;">
+      <label>OFFICER:</label>
+      <input type="text" id="officerName" placeholder="SI Rajesh Kumar" style="width:160px;">
+      <label>STATION:</label>
+      <input type="text" id="stationName" placeholder="Cyber Crime Cell" style="width:160px;">
+      <label>SUSPECT:</label>
+      <input type="text" id="suspectName" placeholder="Suspect Name / Number" style="width:170px;">
+      <button class="btn btn-primary" onclick="generateReport()">📑 GENERATE PDF REPORT</button>
+      <button class="btn btn-success btn-sm" onclick="window.print()">🖨️ PRINT / SAVE PDF</button>
+    </div>
+    <div id="reportContent"></div>
+  </div>
+
+</div><!-- end main -->
+
+<script>
+// ============================================================
+// GLOBAL STATE
+// ============================================================
+let rawData = [];
+let processedData = [];
+let columns = [];
+let columnMap = {
+  timestamp:'', destIP:'', destPort:'', srcIP:'', protocol:'',
+  downloadBytes:'', uploadBytes:'', msisdn:'', imei:'',
+  latitude:'', longitude:'', cellTower:'', locationName:'', locationType:''
+};
+let geoCache = {};
+let charts = {};
+let map = null;
+let markers = [];
+let isDataLoaded = false;
+
+// VPN/Proxy known ports
+const VPN_PORTS = {
+  1194: {name:'OpenVPN', risk:'HIGH'},
+  1723: {name:'PPTP VPN', risk:'HIGH'},
+  4500: {name:'IPSec VPN', risk:'HIGH'},
+  500:  {name:'IKEv2 VPN', risk:'HIGH'},
+  1080: {name:'SOCKS Proxy', risk:'HIGH'},
+  3128: {name:'HTTP Proxy (Squid)', risk:'MEDIUM'},
+  8080: {name:'HTTP Proxy', risk:'MEDIUM'},
+  8888: {name:'HTTP Proxy', risk:'MEDIUM'},
+  1194: {name:'OpenVPN', risk:'HIGH'},
+  51820:{name:'WireGuard VPN', risk:'HIGH'},
+  4444: {name:'Metasploit/RAT', risk:'CRITICAL'},
+  5555: {name:'Android Debug/RAT', risk:'CRITICAL'},
+  6666: {name:'Possible C2 Server', risk:'CRITICAL'},
+  9050: {name:'Tor SOCKS', risk:'HIGH'},
+  9001: {name:'Tor Directory', risk:'HIGH'},
+  9030: {name:'Tor Control', risk:'HIGH'},
+  22:   {name:'SSH Tunnel', risk:'MEDIUM'},
+  3389: {name:'RDP Remote', risk:'MEDIUM'},
+  6881: {name:'BitTorrent', risk:'LOW'},
+  6889: {name:'BitTorrent', risk:'LOW'},
+};
+
+const COUNTRIES_SUSPICIOUS = ['CN','RU','KP','PK','IR','SY','BY','VE','CU'];
+
+// ============================================================
+// CLOCK
+// ============================================================
+function updateClock(){
+  const now = new Date();
+  document.getElementById('current-time').textContent = now.toLocaleTimeString('en-IN');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+function showTab(tab){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  event.target.classList.add('active');
+  if(tab==='location' && isDataLoaded) initLocationTab();
+  if(tab==='social' && isDataLoaded) renderSocialMedia();
+  if(tab==='mapview' && isDataLoaded) initMap();
+  if(tab==='timeline' && isDataLoaded) renderTimeline();
+  if(tab==='habits' && isDataLoaded) renderHabits();
+  if(tab==='vpn' && isDataLoaded) renderVPN();
+}
+
+// ============================================================
+// FILE UPLOAD
+// ============================================================
+const uploadZone = document.getElementById('uploadZone');
+uploadZone.addEventListener('dragover', e=>{e.preventDefault(); uploadZone.classList.add('drag-over');});
+uploadZone.addEventListener('dragleave', ()=>uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e=>{
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if(file) loadFile(file);
+});
+
+function handleFileUpload(e){
+  const file = e.target.files[0];
+  if(file) loadFile(file);
+}
+
+function loadFile(file){
+  showLoading('FILE LOAD HO RAHI HAI...');
+  const ext = file.name.split('.').pop().toLowerCase();
+  
+  if(ext === 'csv'){
+    Papa.parse(file, {
+      header:true,
+      skipEmptyLines:true,
+      complete:(results)=>{
+        rawData = results.data;
+        columns = results.meta.fields;
+        hideLoading();
+        showColumnMapper();
+      }
+    });
+  } else if(ext === 'xlsx' || ext === 'xls'){
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      const wb = XLSX.read(e.target.result, {type:'binary'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(ws, {raw:false});
+      rawData = data;
+      columns = Object.keys(data[0] || {});
+      hideLoading();
+      showColumnMapper();
+    };
+    reader.readAsBinaryString(file);
+  }
+}
+
+// ============================================================
+// COLUMN MAPPER
+// ============================================================
+function showColumnMapper(){
+  const fields = [
+    {key:'timestamp', label:'Timestamp / Date-Time', required:true},
+    {key:'destIP', label:'Destination IP', required:true},
+    {key:'destPort', label:'Destination Port', required:true},
+    {key:'srcIP', label:'Source/Subscriber IP', required:false},
+    {key:'protocol', label:'Protocol (TCP/UDP)', required:false},
+    {key:'downloadBytes', label:'Download Bytes', required:false},
+    {key:'uploadBytes', label:'Upload Bytes', required:false},
+    {key:'msisdn', label:'Mobile No. / MSISDN', required:false},
+    {key:'imei', label:'IMEI', required:false},
+    {key:'latitude', label:'📍 Latitude (Location)', required:false},
+    {key:'longitude', label:'📍 Longitude (Location)', required:false},
+    {key:'cellTower', label:'📡 Cell Tower ID', required:false},
+    {key:'locationName', label:'🏠 Location Name', required:false},
+    {key:'locationType', label:'🔖 Location Type', required:false},
+  ];
+
+  const grid = document.getElementById('colMapperGrid');
+  grid.innerHTML = '';
+
+  // Auto-detect columns
+  const autoMap = {};
+  columns.forEach(col=>{
+    const cl = col.toLowerCase().replace(/[\s_-]/g,'');
+    if(cl.includes('time') || cl.includes('date') || cl.includes('timestamp')) autoMap.timestamp = col;
+    if(cl.includes('destip') || cl.includes('destinationip') || cl.includes('dstip') || cl.includes('serverip')) autoMap.destIP = col;
+    if(cl.includes('destport') || cl.includes('dstport') || cl.includes('destinationport') || cl.includes('serverport')) autoMap.destPort = col;
+    if(cl.includes('srcip') || cl.includes('sourceip') || cl.includes('clientip') || cl.includes('subscriberip') || cl.includes('userip') || cl.includes('privateip') || cl.includes('localip')) autoMap.srcIP = col;
+    if(cl.includes('protocol') || cl.includes('proto')) autoMap.protocol = col;
+    if(cl.includes('download') || cl.includes('rx') || cl.includes('inbyte') || cl.includes('downlink')) autoMap.downloadBytes = col;
+    if(cl.includes('upload') || cl.includes('tx') || cl.includes('outbyte') || cl.includes('uplink')) autoMap.uploadBytes = col;
+    if(cl.includes('msisdn') || cl.includes('mobile') || cl.includes('phone') || cl.includes('number') || cl.includes('subscriber')) autoMap.msisdn = col;
+    if(cl.includes('lat') && !cl.includes('last')) autoMap.latitude = col;
+    if(cl.includes('lon') || cl.includes('lng')) autoMap.longitude = col;
+    if(cl.includes('tower') || cl.includes('celltower') || cl.includes('bts') || cl.includes('cgi')) autoMap.cellTower = col;
+    if(cl.includes('locationname') || cl.includes('placename') || cl.includes('area')) autoMap.locationName = col;
+    if(cl.includes('locationtype') || cl.includes('placetype') || cl.includes('loctype')) autoMap.locationType = col;
+  });
+
+  fields.forEach(f=>{
+    const div = document.createElement('div');
+    div.className = 'col-mapper-item';
+    div.innerHTML = `
+      <label>${f.label}${f.required?' <span style="color:#ff3366">*</span>':''}</label>
+      <select id="map_${f.key}">
+        <option value="">-- Select Column --</option>
+        ${columns.map(c=>`<option value="${c}" ${autoMap[f.key]===c?'selected':''}>${c}</option>`).join('')}
+      </select>`;
+    grid.appendChild(div);
+  });
+
+  document.getElementById('colMapper').style.display = 'block';
+}
+
+// ============================================================
+// PROCESS DATA
+// ============================================================
+function processData(){
+  // Get column mapping
+  Object.keys(columnMap).forEach(k=>{
+    const el = document.getElementById('map_'+k);
+    if(el) columnMap[k] = el.value;
+  });
+
+  if(!columnMap.timestamp || !columnMap.destIP){
+    alert('⚠️ Timestamp aur Destination IP columns zaroor select karo!');
+    return;
+  }
+
+  showLoading('IPDR DATA PROCESS HO RAHA HAI...');
+
+  setTimeout(()=>{
+    processedData = rawData.map((row,i)=>{
+      const ts = row[columnMap.timestamp] || '';
+      const dt = parseDate(ts);
+      return {
+        idx: i,
+        rawTimestamp: ts,
+        date: dt,
+        destIP: (row[columnMap.destIP] || '').trim(),
+        destPort: parseInt(row[columnMap.destPort] || 0) || 0,
+        srcIP: row[columnMap.srcIP] || '',
+        protocol: row[columnMap.protocol] || '',
+        downloadBytes: parseFloat(row[columnMap.downloadBytes] || 0) || 0,
+        uploadBytes: parseFloat(row[columnMap.uploadBytes] || 0) || 0,
+        msisdn: row[columnMap.msisdn] || '',
+        imei: row[columnMap.imei] || '',
+        lat: parseFloat(row[columnMap.latitude] || '') || null,
+        lon: parseFloat(row[columnMap.longitude] || '') || null,
+        cellTower: row[columnMap.cellTower] || '',
+        locationName: row[columnMap.locationName] || '',
+        locationType: row[columnMap.locationType] || 'unknown',
+        country: geoCache[row[columnMap.destIP]]?.country || '',
+        org: geoCache[row[columnMap.destIP]]?.org || '',
+      };
+    }).filter(r=>r.destIP && r.destIP !== 'N/A' && r.destIP !== '-');
+
+    isDataLoaded = true;
+
+    // Pre-fill geo cache with offline DB immediately
+    const uniqueDestIPs = [...new Set(processedData.map(r=>r.destIP).filter(isPublicIP))];
+    uniqueDestIPs.forEach(ip=>{ if(!geoCache[ip]){ const g=lookupIPOffline(ip); if(g) geoCache[ip]=g; } });
+
+    hideLoading();
+    renderDashboard();
+    renderRawTable();
+  }, 100);
+}
+
+function parseDate(str){
+  if(!str) return null;
+  try {
+    // Try various formats
+    let dt = new Date(str);
+    if(isNaN(dt.getTime())){
+      // DD/MM/YYYY HH:MM:SS format
+      const m = str.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):?(\d{2})?/);
+      if(m) dt = new Date(`${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}:${m[6]||'00'}`);
+    }
+    return isNaN(dt.getTime()) ? null : dt;
+  } catch(e){ return null; }
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard(){
+  const total = processedData.length;
+  const uniqueIPs = [...new Set(processedData.map(r=>r.destIP))];
+  const totalDL = processedData.reduce((s,r)=>s+r.downloadBytes, 0);
+  const totalUL = processedData.reduce((s,r)=>s+r.uploadBytes, 0);
+  const vpnConnections = processedData.filter(r=>VPN_PORTS[r.destPort]).length;
+  const uniquePorts = [...new Set(processedData.map(r=>r.destPort).filter(Boolean))];
+
+  const statsGrid = document.getElementById('statsGrid');
+  statsGrid.innerHTML = `
+    <div class="stat-card blue">
+      <div class="stat-icon">📊</div>
+      <div class="stat-value">${total.toLocaleString()}</div>
+      <div class="stat-label">Total Records</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-icon">🌐</div>
+      <div class="stat-value">${uniqueIPs.length}</div>
+      <div class="stat-label">Unique Dest IPs</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-icon">⬇️</div>
+      <div class="stat-value">${formatBytes(totalDL)}</div>
+      <div class="stat-label">Total Download</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-icon">⬆️</div>
+      <div class="stat-value">${formatBytes(totalUL)}</div>
+      <div class="stat-label">Total Upload</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-icon">🔐</div>
+      <div class="stat-value">${vpnConnections}</div>
+      <div class="stat-label">VPN/Proxy Connections</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-icon">🔌</div>
+      <div class="stat-value">${uniquePorts.length}</div>
+      <div class="stat-label">Unique Ports</div>
+    </div>`;
+
+  // Top IPs
+  const ipCount = {};
+  const ipData = {};
+  processedData.forEach(r=>{
+    ipCount[r.destIP] = (ipCount[r.destIP]||0)+1;
+    if(!ipData[r.destIP]) ipData[r.destIP]={dl:0,ul:0};
+    ipData[r.destIP].dl += r.downloadBytes;
+    ipData[r.destIP].ul += r.uploadBytes;
+  });
+  const topIPs = Object.entries(ipCount).sort((a,b)=>b[1]-a[1]).slice(0,15);
+
+  // Charts
+  document.getElementById('dashCharts').style.display = 'grid';
+
+  destroyChart('topIPsChart');
+  const ctx1 = document.getElementById('topIPsChart').getContext('2d');
+  charts.topIPsChart = new Chart(ctx1,{
+    type:'bar',
+    data:{
+      labels: topIPs.map(x=>x[0]),
+      datasets:[{
+        label:'Connections',
+        data: topIPs.map(x=>x[1]),
+        backgroundColor:'rgba(0,212,255,0.6)',
+        borderColor:'#00d4ff',
+        borderWidth:1,
+        borderRadius:4,
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{ legend:{display:false} },
+      scales:{
+        x:{ ticks:{color:'#7aa8cc', font:{size:9}}, grid:{color:'rgba(30,58,95,0.3)'} },
+        y:{ ticks:{color:'#7aa8cc'}, grid:{color:'rgba(30,58,95,0.3)'} }
+      }
+    }
+  });
+
+  // Port chart
+  const portCount = {};
+  processedData.forEach(r=>{ if(r.destPort) portCount[r.destPort]=(portCount[r.destPort]||0)+1; });
+  const topPorts = Object.entries(portCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
+
+  destroyChart('portChart');
+  const ctx2 = document.getElementById('portChart').getContext('2d');
+  charts.portChart = new Chart(ctx2,{
+    type:'doughnut',
+    data:{
+      labels: topPorts.map(x=>portLabel(x[0])),
+      datasets:[{
+        data: topPorts.map(x=>x[1]),
+        backgroundColor:['#00d4ff','#ff6b35','#39ff14','#ff3366','#aa00ff','#ffaa00','#00aaff','#ff0066','#33ff99','#ffdd00'],
+        borderWidth:2,
+        borderColor:'#080c14'
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{ labels:{color:'#7aa8cc', font:{size:10}} }
+      }
+    }
+  });
+
+  // Top IPs Table
+  document.getElementById('topIPsTable').style.display = 'block';
+  const tbody = document.getElementById('topIPsBody');
+  tbody.innerHTML = topIPs.map((x,i)=>{
+    const ip = x[0];
+    const count = x[1];
+    const vpn = VPN_PORTS[parseInt(Object.entries(portCount).sort((a,b)=>b[1]-a[1])[0]?.[0]||0)] ? 
+      '<span class="badge badge-danger">VPN</span>' : '';
+    const geo = geoCache[ip];
+    return `<tr>
+      <td style="color:var(--text-muted)">${i+1}</td>
+      <td style="font-family:var(--font-mono);color:var(--accent)">${ip}</td>
+      <td>${geo?.country||'<span style="color:var(--text-muted)">Loading...</span>'}</td>
+      <td style="font-size:11px">${geo?.org||'-'}</td>
+      <td style="text-align:center;font-family:var(--font-mono)">${count}</td>
+      <td style="font-family:var(--font-mono);font-size:11px">${formatBytes((ipData[ip]?.dl||0)+(ipData[ip]?.ul||0))}</td>
+      <td>${isSuspiciousIP(ip,{})? '<span class="badge badge-danger">SUSPICIOUS</span>' : '<span class="badge badge-success">NORMAL</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  // Fetch geo for top IPs
+  fetchGeoForIPs(topIPs.map(x=>x[0]));
+}
+
+// ============================================================
+// OFFLINE IP GEOLOCATION DATABASE
+// ============================================================
+const OFFLINE_IP_DB = {
+  // ---- Google ----
+  '8.8.8.8':           {country:'United States',countryCode:'US',city:'Mountain View',org:'Google LLC',lat:37.386,lon:-122.084,proxy:false},
+  '8.8.4.4':           {country:'United States',countryCode:'US',city:'Mountain View',org:'Google LLC',lat:37.386,lon:-122.084,proxy:false},
+  '142.250.195.46':    {country:'United States',countryCode:'US',city:'Mountain View',org:'Google LLC',lat:37.386,lon:-122.084,proxy:false},
+  '172.217.14.206':    {country:'United States',countryCode:'US',city:'Mountain View',org:'Google LLC',lat:37.386,lon:-122.084,proxy:false},
+  '216.58.203.46':     {country:'United States',countryCode:'US',city:'Mountain View',org:'Google LLC',lat:37.386,lon:-122.084,proxy:false},
+  '74.125.200.100':    {country:'United States',countryCode:'US',city:'Mountain View',org:'Google LLC',lat:37.386,lon:-122.084,proxy:false},
+  '142.250.67.174':    {country:'United States',countryCode:'US',city:'Mountain View',org:'Google LLC',lat:37.386,lon:-122.084,proxy:false},
+  '216.58.196.174':    {country:'United States',countryCode:'US',city:'Mountain View',org:'Google LLC',lat:37.386,lon:-122.084,proxy:false},
+  // ---- Meta / Facebook / WhatsApp / Instagram ----
+  '31.13.72.36':       {country:'United States',countryCode:'US',city:'Menlo Park',org:'Meta Platforms Inc.',lat:37.453,lon:-122.182,proxy:false},
+  '31.13.90.51':       {country:'United States',countryCode:'US',city:'Menlo Park',org:'Meta Platforms Inc. (WhatsApp)',lat:37.453,lon:-122.182,proxy:false},
+  '31.13.86.51':       {country:'United States',countryCode:'US',city:'Menlo Park',org:'Meta Platforms Inc. (WhatsApp)',lat:37.453,lon:-122.182,proxy:false},
+  '157.240.198.35':    {country:'United States',countryCode:'US',city:'Menlo Park',org:'Meta Platforms Inc. (Instagram)',lat:37.453,lon:-122.182,proxy:false},
+  '157.240.241.35':    {country:'United States',countryCode:'US',city:'Menlo Park',org:'Meta Platforms Inc.',lat:37.453,lon:-122.182,proxy:false},
+  '66.220.149.89':     {country:'United States',countryCode:'US',city:'Menlo Park',org:'Meta Platforms Inc.',lat:37.453,lon:-122.182,proxy:false},
+  '179.60.192.36':     {country:'United States',countryCode:'US',city:'Menlo Park',org:'Meta Platforms Inc.',lat:37.453,lon:-122.182,proxy:false},
+  // ---- Telegram ----
+  '149.154.167.50':    {country:'Netherlands',countryCode:'NL',city:'Amsterdam',org:'Telegram Messenger Inc.',lat:52.374,lon:4.890,proxy:false},
+  '149.154.160.50':    {country:'Netherlands',countryCode:'NL',city:'Amsterdam',org:'Telegram Messenger Inc.',lat:52.374,lon:4.890,proxy:false},
+  '91.108.56.100':     {country:'Netherlands',countryCode:'NL',city:'Amsterdam',org:'Telegram Messenger Inc.',lat:52.374,lon:4.890,proxy:false},
+  '91.108.4.100':      {country:'Netherlands',countryCode:'NL',city:'Amsterdam',org:'Telegram Messenger Inc.',lat:52.374,lon:4.890,proxy:false},
+  '149.154.171.5':     {country:'Netherlands',countryCode:'NL',city:'Amsterdam',org:'Telegram Messenger Inc.',lat:52.374,lon:4.890,proxy:false},
+  // ---- Twitter / X ----
+  '104.244.42.1':      {country:'United States',countryCode:'US',city:'San Francisco',org:'Twitter Inc.',lat:37.773,lon:-122.414,proxy:false},
+  '104.244.42.193':    {country:'United States',countryCode:'US',city:'San Francisco',org:'Twitter Inc.',lat:37.773,lon:-122.414,proxy:false},
+  '192.133.77.100':    {country:'United States',countryCode:'US',city:'San Francisco',org:'X Corp.',lat:37.773,lon:-122.414,proxy:false},
+  // ---- Cloudflare ----
+  '1.1.1.1':           {country:'Australia',countryCode:'AU',city:'Sydney',org:'Cloudflare Inc.',lat:-33.868,lon:151.207,proxy:false},
+  '1.0.0.1':           {country:'Australia',countryCode:'AU',city:'Sydney',org:'Cloudflare Inc.',lat:-33.868,lon:151.207,proxy:false},
+  '104.18.16.96':      {country:'United States',countryCode:'US',city:'San Francisco',org:'Cloudflare Inc.',lat:37.773,lon:-122.414,proxy:false},
+  '104.16.0.0':        {country:'United States',countryCode:'US',city:'San Francisco',org:'Cloudflare Inc.',lat:37.773,lon:-122.414,proxy:false},
+  '151.101.1.140':     {country:'United States',countryCode:'US',city:'San Francisco',org:'Fastly CDN',lat:37.773,lon:-122.414,proxy:false},
+  // ---- Microsoft / LinkedIn ----
+  '13.107.21.200':     {country:'United States',countryCode:'US',city:'Redmond',org:'Microsoft Corporation',lat:47.675,lon:-122.121,proxy:false},
+  '40.74.100.100':     {country:'United States',countryCode:'US',city:'Redmond',org:'Microsoft Corporation',lat:47.675,lon:-122.121,proxy:false},
+  '52.96.116.82':      {country:'United States',countryCode:'US',city:'Redmond',org:'Microsoft Office365',lat:47.675,lon:-122.121,proxy:false},
+  '108.174.10.10':     {country:'United States',countryCode:'US',city:'Sunnyvale',org:'LinkedIn Corporation',lat:37.368,lon:-122.036,proxy:false},
+  // ---- India (Jio, Airtel, BSNL) ----
+  '122.160.36.25':     {country:'India',countryCode:'IN',city:'Mumbai',org:'Bharti Airtel Ltd.',lat:19.076,lon:72.877,proxy:false},
+  '103.21.58.192':     {country:'India',countryCode:'IN',city:'Mumbai',org:'Reliance Jio Infocomm',lat:19.076,lon:72.877,proxy:false},
+  '49.44.64.1':        {country:'India',countryCode:'IN',city:'Mumbai',org:'Reliance Jio Infocomm',lat:19.076,lon:72.877,proxy:false},
+  '202.88.141.130':    {country:'India',countryCode:'IN',city:'New Delhi',org:'BSNL India',lat:28.644,lon:77.216,proxy:false},
+  '103.21.244.0':      {country:'India',countryCode:'IN',city:'Bangalore',org:'ShareChat / Mohalla Tech',lat:12.971,lon:77.594,proxy:false},
+  '13.126.0.0':        {country:'India',countryCode:'IN',city:'Mumbai',org:'Amazon AWS Mumbai',lat:19.076,lon:72.877,proxy:false},
+  '52.66.0.0':         {country:'India',countryCode:'IN',city:'Mumbai',org:'Amazon AWS Mumbai',lat:19.076,lon:72.877,proxy:false},
+  // ---- VPN / Proxy / Tor — SUSPICIOUS ----
+  '185.220.101.45':    {country:'Germany',countryCode:'DE',city:'Frankfurt',org:'Tor Exit Node / AS204884',lat:50.110,lon:8.682,proxy:true,hosting:true},
+  '185.220.101.46':    {country:'Germany',countryCode:'DE',city:'Frankfurt',org:'Tor Exit Node / AS204884',lat:50.110,lon:8.682,proxy:true,hosting:true},
+  '37.0.8.102':        {country:'Romania',countryCode:'RO',city:'Bucharest',org:'PPTP VPN Provider',lat:44.432,lon:26.103,proxy:true},
+  '194.165.16.78':     {country:'Netherlands',countryCode:'NL',city:'Amsterdam',org:'WireGuard VPN / Hosting',lat:52.374,lon:4.890,proxy:true,hosting:true},
+  '45.142.212.100':    {country:'Sweden',countryCode:'SE',city:'Stockholm',org:'Tor SOCKS Relay',lat:59.334,lon:18.063,proxy:true},
+  '192.169.69.22':     {country:'Russia',countryCode:'RU',city:'Moscow',org:'Squid Proxy RU',lat:55.751,lon:37.618,proxy:true},
+  '45.76.14.92':       {country:'United States',countryCode:'US',city:'Los Angeles',org:'VPN Provider / Vultr',lat:34.052,lon:-118.244,proxy:true},
+  '198.96.155.3':      {country:'United States',countryCode:'US',city:'Los Angeles',org:'Tor Directory Authority',lat:34.052,lon:-118.244,proxy:true},
+  '176.10.99.200':     {country:'Austria',countryCode:'AT',city:'Vienna',org:'Tor Relay AS8339',lat:48.208,lon:16.373,proxy:true},
+  '45.32.0.0':         {country:'United States',countryCode:'US',city:'Los Angeles',org:'VPN / Vultr Hosting',lat:34.052,lon:-118.244,proxy:true},
+  // ---- Pakistan ----
+  '103.255.4.15':      {country:'Pakistan',countryCode:'PK',city:'Karachi',org:'Pakistan Telecom / PTCL',lat:24.861,lon:67.010,proxy:false},
+  '182.176.144.5':     {country:'Pakistan',countryCode:'PK',city:'Lahore',org:'Pakistan Telecom',lat:31.558,lon:74.358,proxy:false},
+  '202.142.168.1':     {country:'Pakistan',countryCode:'PK',city:'Islamabad',org:'ISP Pakistan',lat:33.720,lon:73.060,proxy:false},
+  // ---- China ----
+  '111.230.189.70':    {country:'China',countryCode:'CN',city:'Shenzhen',org:'Tencent Cloud',lat:22.543,lon:114.058,proxy:false},
+  '47.243.186.59':     {country:'China',countryCode:'CN',city:'Hong Kong',org:'Alibaba Cloud',lat:22.396,lon:114.109,proxy:false},
+  '182.254.116.116':   {country:'China',countryCode:'CN',city:'Beijing',org:'DNSPod / Tencent',lat:39.928,lon:116.388,proxy:false},
+  // ---- Russia ----
+  '77.88.8.8':         {country:'Russia',countryCode:'RU',city:'Moscow',org:'Yandex LLC',lat:55.751,lon:37.618,proxy:false},
+  '195.82.146.1':      {country:'Russia',countryCode:'RU',city:'Moscow',org:'RU ISP',lat:55.751,lon:37.618,proxy:false},
+  // ---- DNS ----
+  '208.67.222.222':    {country:'United States',countryCode:'US',city:'San Francisco',org:'Cisco OpenDNS',lat:37.773,lon:-122.414,proxy:false},
+  '9.9.9.9':           {country:'United States',countryCode:'US',city:'Berkeley',org:'Quad9 DNS',lat:37.871,lon:-122.273,proxy:false},
+};
+
+// IP Range prefix lookup (for IPs not in exact db)
+const IP_RANGE_DB = [
+  // Google
+  {prefix:'142.250.',  country:'United States',countryCode:'US',city:'Mountain View',org:'Google LLC',lat:37.386,lon:-122.084,proxy:false},
+  {prefix:'172.217.',  country:'United States',countryCode:'US',city:'Mountain View',org:'Google LLC',lat:37.386,lon:-122.084,proxy:false},
+  {prefix:'74.125.',   country:'United States',countryCode:'US',city:'Mountain View',org:'Google LLC',lat:37.386,lon:-122.084,proxy:false},
+  {prefix:'64.233.',   country:'United States',countryCode:'US',city:'Mountain View',org:'Google LLC',lat:37.386,lon:-122.084,proxy:false},
+  {prefix:'216.58.',   country:'United States',countryCode:'US',city:'Mountain View',org:'Google LLC',lat:37.386,lon:-122.084,proxy:false},
+  // Meta
+  {prefix:'31.13.',    country:'United States',countryCode:'US',city:'Menlo Park',org:'Meta Platforms Inc.',lat:37.453,lon:-122.182,proxy:false},
+  {prefix:'157.240.',  country:'United States',countryCode:'US',city:'Menlo Park',org:'Meta Platforms Inc.',lat:37.453,lon:-122.182,proxy:false},
+  {prefix:'179.60.',   country:'United States',countryCode:'US',city:'Menlo Park',org:'Meta Platforms Inc.',lat:37.453,lon:-122.182,proxy:false},
+  {prefix:'66.220.',   country:'United States',countryCode:'US',city:'Menlo Park',org:'Meta Platforms Inc.',lat:37.453,lon:-122.182,proxy:false},
+  // Telegram
+  {prefix:'149.154.',  country:'Netherlands',countryCode:'NL',city:'Amsterdam',org:'Telegram Messenger Inc.',lat:52.374,lon:4.890,proxy:false},
+  {prefix:'91.108.',   country:'Netherlands',countryCode:'NL',city:'Amsterdam',org:'Telegram Messenger Inc.',lat:52.374,lon:4.890,proxy:false},
+  {prefix:'95.161.',   country:'Netherlands',countryCode:'NL',city:'Amsterdam',org:'Telegram Messenger Inc.',lat:52.374,lon:4.890,proxy:false},
+  // Twitter
+  {prefix:'104.244.',  country:'United States',countryCode:'US',city:'San Francisco',org:'Twitter / X Corp.',lat:37.773,lon:-122.414,proxy:false},
+  {prefix:'192.133.',  country:'United States',countryCode:'US',city:'San Francisco',org:'Twitter / X Corp.',lat:37.773,lon:-122.414,proxy:false},
+  // Cloudflare
+  {prefix:'104.18.',   country:'United States',countryCode:'US',city:'San Francisco',org:'Cloudflare Inc.',lat:37.773,lon:-122.414,proxy:false},
+  {prefix:'104.16.',   country:'United States',countryCode:'US',city:'San Francisco',org:'Cloudflare Inc.',lat:37.773,lon:-122.414,proxy:false},
+  {prefix:'172.64.',   country:'United States',countryCode:'US',city:'San Francisco',org:'Cloudflare Inc.',lat:37.773,lon:-122.414,proxy:false},
+  {prefix:'162.158.',  country:'United States',countryCode:'US',city:'San Francisco',org:'Cloudflare Inc.',lat:37.773,lon:-122.414,proxy:false},
+  // Amazon AWS
+  {prefix:'52.66.',    country:'India',countryCode:'IN',city:'Mumbai',org:'Amazon AWS ap-south-1',lat:19.076,lon:72.877,proxy:false},
+  {prefix:'13.126.',   country:'India',countryCode:'IN',city:'Mumbai',org:'Amazon AWS ap-south-1',lat:19.076,lon:72.877,proxy:false},
+  {prefix:'13.234.',   country:'India',countryCode:'IN',city:'Mumbai',org:'Amazon AWS ap-south-1',lat:19.076,lon:72.877,proxy:false},
+  {prefix:'52.0.',     country:'United States',countryCode:'US',city:'Ashburn',org:'Amazon AWS us-east-1',lat:38.960,lon:-77.489,proxy:false},
+  {prefix:'54.80.',    country:'United States',countryCode:'US',city:'Ashburn',org:'Amazon AWS',lat:38.960,lon:-77.489,proxy:false},
+  {prefix:'35.190.',   country:'United States',countryCode:'US',city:'Council Bluffs',org:'Google Cloud',lat:41.258,lon:-95.862,proxy:false},
+  // Microsoft
+  {prefix:'40.74.',    country:'United States',countryCode:'US',city:'Redmond',org:'Microsoft Corporation',lat:47.675,lon:-122.121,proxy:false},
+  {prefix:'13.107.',   country:'United States',countryCode:'US',city:'Redmond',org:'Microsoft Corporation',lat:47.675,lon:-122.121,proxy:false},
+  {prefix:'52.96.',    country:'United States',countryCode:'US',city:'Redmond',org:'Microsoft Corporation',lat:47.675,lon:-122.121,proxy:false},
+  {prefix:'108.174.',  country:'United States',countryCode:'US',city:'Sunnyvale',org:'LinkedIn Corporation',lat:37.368,lon:-122.036,proxy:false},
+  // TikTok / ByteDance
+  {prefix:'23.227.',   country:'United States',countryCode:'US',city:'Los Angeles',org:'ByteDance / TikTok',lat:34.052,lon:-118.244,proxy:false},
+  {prefix:'184.150.',  country:'United States',countryCode:'US',city:'Los Angeles',org:'ByteDance / TikTok',lat:34.052,lon:-118.244,proxy:false},
+  // India
+  {prefix:'103.21.',   country:'India',countryCode:'IN',city:'Mumbai',org:'Indian CDN / ShareChat',lat:19.076,lon:72.877,proxy:false},
+  {prefix:'103.255.',  country:'Pakistan',countryCode:'PK',city:'Karachi',org:'Pakistan Telecom',lat:24.861,lon:67.010,proxy:false},
+  {prefix:'182.176.',  country:'Pakistan',countryCode:'PK',city:'Lahore',org:'Pakistan Telecom',lat:31.558,lon:74.358,proxy:false},
+  // China
+  {prefix:'111.230.',  country:'China',countryCode:'CN',city:'Shenzhen',org:'Tencent Cloud',lat:22.543,lon:114.058,proxy:false},
+  {prefix:'47.243.',   country:'China',countryCode:'CN',city:'Hong Kong',org:'Alibaba Cloud',lat:22.396,lon:114.109,proxy:false},
+  // VPN / Tor
+  {prefix:'185.220.',  country:'Germany',countryCode:'DE',city:'Frankfurt',org:'Tor Exit Node',lat:50.110,lon:8.682,proxy:true},
+  {prefix:'194.165.',  country:'Netherlands',countryCode:'NL',city:'Amsterdam',org:'VPN Hosting NL',lat:52.374,lon:4.890,proxy:true},
+  {prefix:'45.142.',   country:'Sweden',countryCode:'SE',city:'Stockholm',org:'VPN / Proxy Server',lat:59.334,lon:18.063,proxy:true},
+  {prefix:'176.10.',   country:'Austria',countryCode:'AT',city:'Vienna',org:'Tor Relay',lat:48.208,lon:16.373,proxy:true},
+  {prefix:'37.0.',     country:'Romania',countryCode:'RO',city:'Bucharest',org:'VPN Provider RO',lat:44.432,lon:26.103,proxy:true},
+  {prefix:'192.169.',  country:'Russia',countryCode:'RU',city:'Moscow',org:'Proxy Server RU',lat:55.751,lon:37.618,proxy:true},
+  {prefix:'77.88.',    country:'Russia',countryCode:'RU',city:'Moscow',org:'Yandex LLC',lat:55.751,lon:37.618,proxy:false},
+];
+
+function lookupIPOffline(ip){
+  if(!ip || !isPublicIP(ip)) return null;
+  // Exact match first
+  if(OFFLINE_IP_DB[ip]) return {...OFFLINE_IP_DB[ip]};
+  // Prefix match
+  for(const r of IP_RANGE_DB){
+    if(ip.startsWith(r.prefix)) return {...r};
+  }
+  return null;
+}
+
+function fetchGeoForIPs(ips){
+  // Offline mode — use built-in database instantly
+  let updated = false;
+  ips.forEach(ip=>{
+    if(!geoCache[ip] && isPublicIP(ip)){
+      const geo = lookupIPOffline(ip);
+      if(geo){ geoCache[ip]=geo; updated=true; }
+    }
+  });
+  if(updated){
+    // Re-render current view
+    if(document.getElementById('tab-dashboard').classList.contains('active')) renderDashboard();
+    if(document.getElementById('tab-mapview').classList.contains('active')) updateMap();
+  }
+  return Promise.resolve();
+}
+
+function isPublicIP(ip){
+  if(!ip) return false;
+  const parts = ip.split('.');
+  if(parts.length !== 4) return false;
+  const a = parseInt(parts[0]);
+  const b = parseInt(parts[1]);
+  if(a===10) return false;
+  if(a===172 && b>=16 && b<=31) return false;
+  if(a===192 && b===168) return false;
+  if(a===127) return false;
+  if(a===0) return false;
+  return true;
+}
+
+function isSuspiciousIP(ip, geo){
+  if(!geo) geo = geoCache[ip] || {};
+  if(geo.proxy) return true;
+  if(geo.hosting && !isKnownHosting(geo.org)) return false;
+  if(COUNTRIES_SUSPICIOUS.includes(geo.countryCode)) return true;
+  return false;
+}
+
+function isKnownHosting(org){
+  const known = ['google','amazon','cloudflare','microsoft','akamai','fastly','facebook','meta'];
+  return known.some(k=>(org||'').toLowerCase().includes(k));
+}
+
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+// ============================================================
+// MAP
+// ============================================================
+function initMap(){
+  if(!map){
+    map = L.map('map').setView([20.5937, 78.9629], 4);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution:'CartoDB',
+      maxZoom:18
+    }).addTo(map);
+  }
+  updateMap();
+}
+
+function updateMap(){
+  if(!map || !isDataLoaded) return;
+
+  // Pre-fill geo cache with offline DB for all unique IPs
+  const allIPs = [...new Set(processedData.map(r=>r.destIP).filter(isPublicIP))];
+  allIPs.forEach(ip=>{ if(!geoCache[ip]){ const g=lookupIPOffline(ip); if(g) geoCache[ip]=g; } });
+
+  // Clear markers
+  markers.forEach(m=>map.removeLayer(m));
+  markers = [];
+
+  const timeFilter = document.getElementById('mapTimeFilter')?.value || 'all';
+  const showFilter = document.getElementById('mapShowFilter')?.value || 'all';
+  const now = new Date();
+
+  // Group by IP
+  const ipGroups = {};
+  processedData.forEach(r=>{
+    if(!r.destIP || !isPublicIP(r.destIP)) return;
+
+    // Time filter
+    if(timeFilter !== 'all' && r.date){
+      const diffDays = (now - r.date) / 86400000;
+      if(timeFilter==='1d' && diffDays>1) return;
+      if(timeFilter==='7d' && diffDays>7) return;
+      if(timeFilter==='30d' && diffDays>30) return;
+      if(timeFilter==='custom'){
+        const from = document.getElementById('mapDateFrom')?.value;
+        const to = document.getElementById('mapDateTo')?.value;
+        if(from && r.date < new Date(from)) return;
+        if(to && r.date > new Date(to+'T23:59:59')) return;
+      }
+    }
+
+    if(!ipGroups[r.destIP]) ipGroups[r.destIP] = {count:0, ports:[], dl:0, ul:0};
+    ipGroups[r.destIP].count++;
+    ipGroups[r.destIP].ports.push(r.destPort);
+    ipGroups[r.destIP].dl += r.downloadBytes;
+    ipGroups[r.destIP].ul += r.uploadBytes;
+  });
+
+  let placed = 0;
+  Object.entries(ipGroups).forEach(([ip, data])=>{
+    const geo = geoCache[ip];
+    if(!geo || !geo.lat) return;
+
+    const isVPN = data.ports.some(p=>VPN_PORTS[p]);
+    const isForeign = geo.countryCode !== 'IN';
+    const isSusp = isSuspiciousIP(ip, geo);
+
+    // Show filter
+    if(showFilter==='suspicious' && !isSusp && !isVPN) return;
+    if(showFilter==='foreign' && !isForeign) return;
+    if(showFilter==='vpn' && !isVPN) return;
+
+    const color = isVPN ? 'purple' : isSusp ? 'red' : isForeign ? 'orange' : 'blue';
+    const icon = getMarkerIcon(color, data.count);
+
+    const m = L.marker([geo.lat, geo.lon], {icon})
+      .bindPopup(`
+        <div style="font-family:monospace;font-size:12px;min-width:200px;">
+          <b style="color:#0066cc;font-size:14px;">🌐 ${ip}</b><br><hr style="margin:4px 0">
+          <b>Location:</b> ${geo.city||''}, ${geo.country||''}<br>
+          <b>ISP/Org:</b> ${geo.org||'-'}<br>
+          <b>Connections:</b> ${data.count}<br>
+          <b>Download:</b> ${formatBytes(data.dl)}<br>
+          <b>Upload:</b> ${formatBytes(data.ul)}<br>
+          <b>VPN/Proxy:</b> ${isVPN?'⚠️ YES':'No'}<br>
+          <b>Country Code:</b> ${geo.countryCode||'-'}<br>
+          ${geo.proxy?'<b style="color:red">⚠️ PROXY DETECTED</b>':''}
+        </div>`)
+      .addTo(map);
+    markers.push(m);
+    placed++;
+  });
+
+  // Show status
+  const unknownIPs = Object.keys(ipGroups).filter(ip=>!geoCache[ip] && isPublicIP(ip));
+  document.getElementById('mapApiNotice').textContent =
+    `✅ ${placed} IPs map par plot ki gayi hain (Offline Database). ${unknownIPs.length>0?unknownIPs.length+' unknown IPs skip kiye gaye.':'Sab IPs identified!'}`;
+}
+
+function getMarkerIcon(color, count){
+  const colors = {
+    red:'#ff3366', orange:'#ffaa00', blue:'#00d4ff', 
+    purple:'#aa00ff', green:'#39ff14'
+  };
+  const c = colors[color] || '#00d4ff';
+  const size = Math.min(40, 20 + Math.log(count+1)*4);
+  return L.divIcon({
+    html:`<div style="background:${c};width:${size}px;height:${size}px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;color:white;font-size:10px;font-weight:bold;box-shadow:0 0 8px ${c};">${count>99?'99+':count}</div>`,
+    className:'',
+    iconSize:[size,size],
+    iconAnchor:[size/2,size/2]
+  });
+}
+
+function fitMapBounds(){
+  if(!map || markers.length===0) return;
+  const group = L.featureGroup(markers);
+  map.fitBounds(group.getBounds().pad(0.1));
+}
+
+// ============================================================
+// TIMELINE
+// ============================================================
+function renderTimeline(){
+  if(!isDataLoaded) return;
+  const view = document.getElementById('timelineView')?.value || 'hour';
+  const period = document.getElementById('timelinePeriod')?.value || 'all';
+  const now = new Date();
+
+  let filtered = processedData.filter(r=>{
+    if(!r.date) return false;
+    const diff = (now - r.date) / 86400000;
+    if(period==='1d' && diff>1) return false;
+    if(period==='7d' && diff>7) return false;
+    if(period==='30d' && diff>30) return false;
+    return true;
+  });
+
+  // Group by time
+  const grouped = {};
+  const dataVolume = {};
+
+  filtered.forEach(r=>{
+    let key;
+    const d = r.date;
+    if(view==='hour') key = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':00';
+    else if(view==='day') key = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+    else if(view==='week'){
+      const week = getWeekNumber(d);
+      key = d.getFullYear()+'-W'+pad(week);
+    } else key = d.getFullYear()+'-'+pad(d.getMonth()+1);
+
+    grouped[key] = (grouped[key]||0)+1;
+    dataVolume[key] = (dataVolume[key]||0)+r.downloadBytes+r.uploadBytes;
+  });
+
+  const labels = Object.keys(grouped).sort();
+  const values = labels.map(k=>grouped[k]);
+  const volumes = labels.map(k=>dataVolume[k]/1048576); // MB
+
+  destroyChart('timelineChart');
+  const ctx = document.getElementById('timelineChart').getContext('2d');
+  charts.timelineChart = new Chart(ctx,{
+    type:'line',
+    data:{
+      labels,
+      datasets:[{
+        label:'Connections',
+        data:values,
+        borderColor:'#00d4ff',
+        backgroundColor:'rgba(0,212,255,0.1)',
+        fill:true,
+        tension:0.4,
+        pointRadius:3,
+        pointBackgroundColor:'#00d4ff',
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{labels:{color:'#7aa8cc'}}},
+      scales:{
+        x:{ticks:{color:'#7aa8cc',maxTicksLimit:20,font:{size:10}},grid:{color:'rgba(30,58,95,0.3)'}},
+        y:{ticks:{color:'#7aa8cc'},grid:{color:'rgba(30,58,95,0.3)'}}
+      }
+    }
+  });
+
+  destroyChart('dataVolumeChart');
+  const ctx2 = document.getElementById('dataVolumeChart').getContext('2d');
+  charts.dataVolumeChart = new Chart(ctx2,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{
+        label:'Data (MB)',
+        data:volumes,
+        backgroundColor:'rgba(255,107,53,0.6)',
+        borderColor:'#ff6b35',
+        borderWidth:1,
+        borderRadius:3,
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{labels:{color:'#7aa8cc'}}},
+      scales:{
+        x:{ticks:{color:'#7aa8cc',maxTicksLimit:15,font:{size:10}},grid:{color:'rgba(30,58,95,0.3)'}},
+        y:{ticks:{color:'#7aa8cc'},grid:{color:'rgba(30,58,95,0.3)'}}
+      }
+    }
+  });
+
+  // Country chart
+  const countryCounts = {};
+  filtered.forEach(r=>{
+    const geo = geoCache[r.destIP];
+    const country = geo?.country || 'Unknown';
+    countryCounts[country] = (countryCounts[country]||0)+1;
+  });
+  const topCountries = Object.entries(countryCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+  destroyChart('countryChart');
+  const ctx3 = document.getElementById('countryChart').getContext('2d');
+  charts.countryChart = new Chart(ctx3,{
+    type:'pie',
+    data:{
+      labels:topCountries.map(x=>x[0]),
+      datasets:[{
+        data:topCountries.map(x=>x[1]),
+        backgroundColor:['#00d4ff','#ff6b35','#39ff14','#ff3366','#aa00ff','#ffaa00','#00aaff','#ff0066'],
+        borderWidth:2,
+        borderColor:'#080c14'
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{labels:{color:'#7aa8cc',font:{size:10}}}}
+    }
+  });
+
+  // Period stats
+  const periodStats = document.getElementById('periodStats');
+  const maxDay = labels[values.indexOf(Math.max(...values))];
+  const avgPerPeriod = values.length ? Math.round(values.reduce((a,b)=>a+b,0)/values.length) : 0;
+  periodStats.innerHTML = `
+    <div class="stat-card blue">
+      <div class="stat-icon">📊</div>
+      <div class="stat-value">${filtered.length}</div>
+      <div class="stat-label">Filtered Records</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-icon">📈</div>
+      <div class="stat-value">${Math.max(...values)||0}</div>
+      <div class="stat-label">Peak Connections</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-icon">⊘</div>
+      <div class="stat-value">${avgPerPeriod}</div>
+      <div class="stat-label">Avg per Period</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-icon">📅</div>
+      <div class="stat-value" style="font-size:14px">${maxDay||'-'}</div>
+      <div class="stat-label">Peak Period</div>
+    </div>`;
+}
+
+// ============================================================
+// VPN DETECTION
+// ============================================================
+function renderVPN(){
+  if(!isDataLoaded) return;
+
+  const vpnConns = processedData.filter(r=>VPN_PORTS[r.destPort]);
+  const proxyConns = processedData.filter(r=>{
+    const geo = geoCache[r.destIP];
+    return geo?.proxy;
+  });
+  const suspCountries = processedData.filter(r=>{
+    const geo = geoCache[r.destIP];
+    return geo && COUNTRIES_SUSPICIOUS.includes(geo.countryCode);
+  });
+
+  document.getElementById('vpnStats').innerHTML = `
+    <div class="stat-card red">
+      <div class="stat-icon">🔐</div>
+      <div class="stat-value">${vpnConns.length}</div>
+      <div class="stat-label">VPN Port Connections</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-icon">🛡️</div>
+      <div class="stat-value">${proxyConns.length}</div>
+      <div class="stat-label">Proxy Detected</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-icon">🌍</div>
+      <div class="stat-value">${suspCountries.length}</div>
+      <div class="stat-label">Suspicious Countries</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-icon">⚠️</div>
+      <div class="stat-value">${vpnConns.length+proxyConns.length}</div>
+      <div class="stat-label">Total Alerts</div>
+    </div>`;
+
+  // VPN Alerts
+  const portGroups = {};
+  vpnConns.forEach(r=>{
+    const p = r.destPort;
+    if(!portGroups[p]) portGroups[p] = {port:p, count:0, ips:new Set(), info:VPN_PORTS[p]};
+    portGroups[p].count++;
+    portGroups[p].ips.add(r.destIP);
+  });
+
+  const alertsDiv = document.getElementById('vpnAlerts');
+  if(Object.keys(portGroups).length === 0 && proxyConns.length === 0){
+    alertsDiv.innerHTML = '<div class="notice">✅ Koi VPN/Proxy connection detect nahi hua.</div>';
+  } else {
+    alertsDiv.innerHTML = Object.values(portGroups).sort((a,b)=>b.count-a.count).map(g=>{
+      const riskColor = g.info?.risk==='CRITICAL'?'var(--danger)':g.info?.risk==='HIGH'?'#ff6b35':'var(--warning)';
+      return `<div class="vpn-alert">
+        <div class="alert-icon">🚨</div>
+        <div class="alert-body">
+          <div class="alert-title">PORT ${g.port} — ${g.info?.name||'Unknown Service'} &nbsp; 
+            <span class="badge badge-danger">${g.info?.risk||'UNKNOWN'}</span></div>
+          <div class="alert-detail">
+            ${g.count} connections | ${g.ips.size} unique IPs | 
+            Destination IPs: ${[...g.ips].slice(0,5).join(', ')}${g.ips.size>5?'...':''}
+          </div>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:20px;color:${riskColor};font-weight:700;">${g.count}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Port Alerts Table
+  const portCount = {};
+  processedData.forEach(r=>{ if(r.destPort) portCount[r.destPort]=(portCount[r.destPort]||0)+1; });
+  const suspPorts = Object.entries(portCount)
+    .filter(([p])=>VPN_PORTS[parseInt(p)])
+    .sort((a,b)=>b[1]-a[1]);
+
+  document.getElementById('portAlertsBody').innerHTML = suspPorts.map(([port,count])=>{
+    const info = VPN_PORTS[parseInt(port)];
+    const riskBadge = info.risk==='CRITICAL'?'badge-danger':info.risk==='HIGH'?'badge-danger':'badge-warning';
+    return `<tr>
+      <td style="font-family:var(--font-mono);color:var(--accent)">${port}</td>
+      <td>TCP/UDP</td>
+      <td>${info.name}</td>
+      <td><span class="badge ${riskBadge}">${info.risk}</span></td>
+      <td style="text-align:center;font-family:var(--font-mono)">${count}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="filterAndShowRaw('port','${port}')">🔍 VIEW</button></td>
+    </tr>`;
+  }).join('');
+
+  // Suspicious IPs table
+  const suspIPs = {};
+  processedData.forEach(r=>{
+    const geo = geoCache[r.destIP];
+    if(!geo) return;
+    if(COUNTRIES_SUSPICIOUS.includes(geo.countryCode) || geo.proxy){
+      if(!suspIPs[r.destIP]) suspIPs[r.destIP] = {
+        ip:r.destIP, geo, count:0,
+        firstSeen: r.date, lastSeen: r.date,
+        category: geo.proxy?'Proxy':COUNTRIES_SUSPICIOUS.includes(geo.countryCode)?'Suspicious Country':'Unknown'
+      };
+      suspIPs[r.destIP].count++;
+      if(r.date < suspIPs[r.destIP].firstSeen) suspIPs[r.destIP].firstSeen = r.date;
+      if(r.date > suspIPs[r.destIP].lastSeen) suspIPs[r.destIP].lastSeen = r.date;
+    }
+  });
+
+  document.getElementById('suspiciousBody').innerHTML = Object.values(suspIPs)
+    .sort((a,b)=>b.count-a.count)
+    .slice(0,50)
+    .map(s=>`<tr>
+      <td style="font-family:var(--font-mono);color:var(--accent)">${s.ip}</td>
+      <td>${s.geo.country||'-'} (${s.geo.countryCode||'-'})</td>
+      <td style="font-size:11px">${s.geo.org||'-'}</td>
+      <td><span class="badge badge-danger">${s.category}</span></td>
+      <td style="font-family:var(--font-mono);font-size:11px">${fmtDate(s.firstSeen)}</td>
+      <td style="font-family:var(--font-mono);font-size:11px">${fmtDate(s.lastSeen)}</td>
+      <td style="text-align:center">${s.count}</td>
+    </tr>`).join('');
+}
+
+// ============================================================
+// WORKING HABITS
+// ============================================================
+function renderHabits(){
+  if(!isDataLoaded) return;
+
+  const hourCounts = new Array(24).fill(0);
+  const dayHourMatrix = Array.from({length:7},()=>new Array(24).fill(0));
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dayCounts = new Array(7).fill(0);
+
+  processedData.forEach(r=>{
+    if(!r.date) return;
+    const h = r.date.getHours();
+    const d = r.date.getDay();
+    hourCounts[h]++;
+    dayHourMatrix[d][h]++;
+    dayCounts[d]++;
+  });
+
+  // Stats
+  const peakHour = hourCounts.indexOf(Math.max(...hourCounts));
+  const quietHour = hourCounts.indexOf(Math.min(...hourCounts));
+  const peakDay = dayCounts.indexOf(Math.max(...dayCounts));
+  const nightActivity = hourCounts.slice(23).concat(hourCounts.slice(0,6)).reduce((a,b)=>a+b,0);
+  const total = processedData.length;
+
+  document.getElementById('habitsStats').innerHTML = `
+    <div class="stat-card blue">
+      <div class="stat-icon">⏰</div>
+      <div class="stat-value">${peakHour}:00</div>
+      <div class="stat-label">Peak Activity Hour</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-icon">📅</div>
+      <div class="stat-value">${dayNames[peakDay]}</div>
+      <div class="stat-label">Most Active Day</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-icon">🌙</div>
+      <div class="stat-value">${Math.round(nightActivity/total*100)}%</div>
+      <div class="stat-label">Night Activity (11PM-6AM)</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-icon">🌞</div>
+      <div class="stat-value">${quietHour}:00</div>
+      <div class="stat-label">Least Active Hour</div>
+    </div>`;
+
+  // Heatmap
+  const maxVal = Math.max(...dayHourMatrix.flat());
+  const container = document.getElementById('heatmapContainer');
+  const hourLabels = Array.from({length:24},(_,i)=>pad(i));
+
+  let html = `<div class="heatmap-grid">
+    <div style="color:var(--text-muted);font-size:10px;font-family:var(--font-mono);padding:4px;"></div>
+    ${hourLabels.map(h=>`<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);text-align:center;padding:2px 0;">${h}</div>`).join('')}`;
+
+  dayNames.forEach((day,di)=>{
+    html += `<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);display:flex;align-items:center;padding-right:8px;">${day}</div>`;
+    for(let h=0; h<24; h++){
+      const val = dayHourMatrix[di][h];
+      const intensity = maxVal>0 ? val/maxVal : 0;
+      const color = heatColor(intensity);
+      html += `<div title="${day} ${pad(h)}:00 — ${val} connections" style="background:${color};min-height:22px;border-radius:3px;cursor:default;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.5)';this.style.zIndex=10" onmouseout="this.style.transform='scale(1)';this.style.zIndex=1"></div>`;
+    }
+  });
+  html += '</div>';
+  container.innerHTML = html;
+
+  // Active hours chart
+  destroyChart('activeHoursChart');
+  const ctx = document.getElementById('activeHoursChart').getContext('2d');
+  charts.activeHoursChart = new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:hourLabels.map(h=>h+':00'),
+      datasets:[{
+        label:'Connections',
+        data:hourCounts,
+        backgroundColor: hourCounts.map((_,i)=>{
+          if(i>=23||i<6) return 'rgba(255,51,102,0.7)'; // night
+          if(i>=9&&i<=17) return 'rgba(57,255,20,0.7)'; // work hours
+          return 'rgba(0,212,255,0.6)';
+        }),
+        borderWidth:0,
+        borderRadius:3,
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          label: ctx=>`${ctx.raw} connections`
+        }}
+      },
+      scales:{
+        x:{ticks:{color:'#7aa8cc',font:{size:9}},grid:{color:'rgba(30,58,95,0.3)'}},
+        y:{ticks:{color:'#7aa8cc'},grid:{color:'rgba(30,58,95,0.3)'}}
+      }
+    }
+  });
+
+  // Day of week chart
+  destroyChart('dayOfWeekChart');
+  const ctx2 = document.getElementById('dayOfWeekChart').getContext('2d');
+  charts.dayOfWeekChart = new Chart(ctx2,{
+    type:'polarArea',
+    data:{
+      labels:dayNames,
+      datasets:[{
+        data:dayCounts,
+        backgroundColor:['rgba(0,212,255,0.6)','rgba(255,107,53,0.6)','rgba(57,255,20,0.6)','rgba(255,51,102,0.6)','rgba(170,0,255,0.6)','rgba(255,170,0,0.6)','rgba(0,170,255,0.6)'],
+        borderWidth:1,
+        borderColor:'rgba(255,255,255,0.1)'
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{labels:{color:'#7aa8cc'}}}
+    }
+  });
+
+  // Patterns
+  const patterns = [];
+  if(nightActivity/total > 0.3) patterns.push({icon:'⚠️', text:'High night activity detected (30%+). Suspect may be using internet during unusual hours.', risk:'HIGH'});
+  if(hourCounts[peakHour] > total*0.15) patterns.push({icon:'📌', text:`Peak usage at ${peakHour}:00 hrs — ${hourCounts[peakHour]} connections.`, risk:'INFO'});
+  if(dayCounts[0]>total*0.15 || dayCounts[6]>total*0.15) patterns.push({icon:'📅', text:'High weekend activity detected. Unusual for normal work pattern.', risk:'MEDIUM'});
+
+  document.getElementById('patternsDiv').innerHTML = patterns.length ?
+    patterns.map(p=>`<div class="vpn-alert" style="border-left-color:${p.risk==='HIGH'?'#ff3366':p.risk==='MEDIUM'?'#ffaa00':'#00d4ff'}">
+      <div class="alert-icon">${p.icon}</div>
+      <div class="alert-body">
+        <div class="alert-detail">${p.text}</div>
+      </div>
+      <span class="badge ${p.risk==='HIGH'?'badge-danger':p.risk==='MEDIUM'?'badge-warning':'badge-info'}">${p.risk}</span>
+    </div>`).join('') :
+    '<div class="notice">✅ No unusual patterns detected.</div>';
+}
+
+// ============================================================
+// RAW DATA TABLE
+// ============================================================
+function renderRawTable(){
+  const thead = document.getElementById('rawTableHead');
+  const cols = ['#','Timestamp','Dest IP','Port','Protocol','Src IP','Download','Upload','MSISDN','IMEI'];
+  thead.innerHTML = `<tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr>`;
+
+  const countries = [...new Set(Object.values(geoCache).map(g=>g.country).filter(Boolean))].sort();
+  const sel = document.getElementById('rawCountryFilter');
+  sel.innerHTML = '<option value="">All Countries</option>' + countries.map(c=>`<option value="${c}">${c}</option>`).join('');
+
+  filterTable();
+}
+
+function filterTable(){
+  const searchIP = document.getElementById('searchIP')?.value.toLowerCase()||'';
+  const searchPort = document.getElementById('searchPort')?.value||'';
+  const dateFrom = document.getElementById('rawDateFrom')?.value;
+  const dateTo = document.getElementById('rawDateTo')?.value;
+  const country = document.getElementById('rawCountryFilter')?.value||'';
+
+  let filtered = processedData.filter(r=>{
+    if(searchIP && !r.destIP.includes(searchIP) && !r.srcIP.includes(searchIP)) return false;
+    if(searchPort && r.destPort !== parseInt(searchPort)) return false;
+    if(dateFrom && r.date && r.date < new Date(dateFrom)) return false;
+    if(dateTo && r.date && r.date > new Date(dateTo+'T23:59:59')) return false;
+    if(country){
+      const geo = geoCache[r.destIP];
+      if(!geo || geo.country !== country) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('rowCount').textContent = `${filtered.length} / ${processedData.length} records`;
+
+  const tbody = document.getElementById('rawTableBody');
+  tbody.innerHTML = filtered.slice(0,500).map((r,i)=>{
+    const isVPN = VPN_PORTS[r.destPort];
+    const geo = geoCache[r.destIP];
+    const isSusp = isSuspiciousIP(r.destIP, geo);
+    return `<tr style="${isSusp||isVPN?'background:rgba(255,51,102,0.05);':''}" title="${isVPN?'VPN/Proxy Port':''}">
+      <td style="color:var(--text-muted)">${i+1}</td>
+      <td style="font-size:11px">${r.rawTimestamp}</td>
+      <td style="font-family:var(--font-mono);color:${isSusp?'#ff3366':isVPN?'#ffaa00':'var(--accent)'}">${r.destIP}${geo?` <span style="font-size:9px;color:var(--text-muted)">${geo.countryCode}</span>`:''}</td>
+      <td style="font-family:var(--font-mono)">${r.destPort||'-'}${isVPN?` <span class="badge badge-danger" style="font-size:8px">${VPN_PORTS[r.destPort]?.name}</span>`:''}</td>
+      <td>${r.protocol||'-'}</td>
+      <td style="font-family:var(--font-mono);font-size:11px">${r.srcIP||'-'}</td>
+      <td style="font-family:var(--font-mono);font-size:11px">${formatBytes(r.downloadBytes)}</td>
+      <td style="font-family:var(--font-mono);font-size:11px">${formatBytes(r.uploadBytes)}</td>
+      <td style="font-family:var(--font-mono);font-size:11px">${r.msisdn||'-'}</td>
+      <td style="font-family:var(--font-mono);font-size:11px">${r.imei||'-'}</td>
+    </tr>`;
+  }).join('');
+
+  if(filtered.length > 500){
+    tbody.innerHTML += `<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:12px;font-family:var(--font-mono);font-size:12px;">
+      ⚠️ Showing first 500 of ${filtered.length} records. Use filters to narrow down.
+    </td></tr>`;
+  }
+}
+
+function clearFilters(){
+  document.getElementById('searchIP').value='';
+  document.getElementById('searchPort').value='';
+  document.getElementById('rawDateFrom').value='';
+  document.getElementById('rawDateTo').value='';
+  document.getElementById('rawCountryFilter').value='';
+  filterTable();
+}
+
+function filterAndShowRaw(type, value){
+  if(type==='port') document.getElementById('searchPort').value=value;
+  showTab('rawdata');
+  document.querySelectorAll('.nav-tab')[5].classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>{ if(i!==5) t.classList.remove('active'); });
+  filterTable();
+}
+
+// ============================================================
+// REPORT GENERATION
+// ============================================================
+function generateReport(){
+  if(!isDataLoaded){ alert('⚠️ Pehle data load karo!'); return; }
+
+  const caseNo   = document.getElementById('caseNumber').value||'N/A';
+  const officer  = document.getElementById('officerName').value||'N/A';
+  const station  = document.getElementById('stationName').value||'N/A';
+  const suspect  = document.getElementById('suspectName').value||'N/A';
+  const now      = new Date();
+
+  const total    = processedData.length;
+  const uIPs     = [...new Set(processedData.map(r=>r.destIP))];
+  const vpnConns = processedData.filter(r=>VPN_PORTS[r.destPort]);
+  const totalDL  = processedData.reduce((s,r)=>s+r.downloadBytes,0);
+  const totalUL  = processedData.reduce((s,r)=>s+r.uploadBytes,0);
+  const locRecs  = processedData.filter(r=>r.lat&&r.lon);
+
+  const dates    = processedData.filter(r=>r.date).map(r=>r.date);
+  const minDate  = dates.length?new Date(Math.min(...dates)):null;
+  const maxDate  = dates.length?new Date(Math.max(...dates)):null;
+
+  // Social media summary
+  const socialRows = processedData.map(r=>({...r,socialApp:detectSocialMedia(r)})).filter(r=>r.socialApp);
+  const appCounts={};
+  socialRows.forEach(r=>{ appCounts[r.socialApp]=(appCounts[r.socialApp]||0)+1; });
+  const topApps=Object.entries(appCounts).sort((a,b)=>b[1]-a[1]);
+
+  // Location summary
+  const locTypes={};
+  locRecs.forEach(r=>{ locTypes[r.locationType]=(locTypes[r.locationType]||0)+1; });
+  const uniqueLocs=[...new Set(locRecs.map(r=>r.locationName).filter(Boolean))];
+  const crimeLocs=locRecs.filter(r=>r.locationType==='crime');
+  const suspLocs =locRecs.filter(r=>r.locationType==='suspicious');
+
+  // VPN port groups
+  const portGroups={};
+  vpnConns.forEach(r=>{ const p=r.destPort; if(!portGroups[p]) portGroups[p]={count:0,info:VPN_PORTS[p]}; portGroups[p].count++; });
+
+  // Suspicious country
+  const suspCC={};
+  processedData.forEach(r=>{ const g=geoCache[r.destIP]; if(g&&COUNTRIES_SUSPICIOUS.includes(g.countryCode)) suspCC[g.country]=(suspCC[g.country]||0)+1; });
+
+  // Top IPs
+  const top10=getTopIPs(10);
+
+  // Hourly
+  const hourly=new Array(24).fill(0);
+  processedData.forEach(r=>{ if(r.date) hourly[r.date.getHours()]++; });
+  const peakHour=hourly.indexOf(Math.max(...hourly));
+  const nightPct=Math.round((hourly[23]+hourly[0]+hourly[1]+hourly[2]+hourly[3]+hourly[4]+hourly[5])/total*100);
+
+  const riskLevel = (vpnConns.length>0||Object.keys(suspCC).length>0||crimeLocs.length>0)?'HIGH':suspLocs.length>0?'MEDIUM':'LOW';
+  const riskColor = riskLevel==='HIGH'?'#dc2626':riskLevel==='MEDIUM'?'#d97706':'#16a34a';
+
+  document.getElementById('reportContent').innerHTML = `
+  <div id="printReport" style="font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a2e;max-width:900px;margin:0 auto;padding:0;">
+
+    <!-- PAGE 1: COVER -->
+    <div style="page-break-after:always;padding:40px;min-height:90vh;background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#0f172a 100%);color:#fff;display:flex;flex-direction:column;justify-content:space-between;">
+      
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #00d4ff;padding-bottom:20px;">
+        <div>
+          <div style="font-size:11px;letter-spacing:4px;color:#7aa8cc;">GOVERNMENT OF INDIA</div>
+          <div style="font-size:16px;font-weight:700;letter-spacing:2px;color:#00d4ff;">CYBER CRIME INVESTIGATION</div>
+        </div>
+        <div style="text-align:right;font-size:11px;color:#7aa8cc;">
+          <div>🛡️ CLASSIFIED — LAW ENFORCEMENT ONLY</div>
+          <div>Report ID: RPT-${Date.now().toString().slice(-6)}</div>
+        </div>
+      </div>
+
+      <div style="text-align:center;padding:60px 0;">
+        <div style="font-size:80px;margin-bottom:20px;">📊</div>
+        <div style="font-size:36px;font-weight:700;letter-spacing:6px;color:#00d4ff;margin-bottom:10px;">IPDR ANALYSIS</div>
+        <div style="font-size:18px;letter-spacing:3px;color:#7aa8cc;margin-bottom:40px;">INTERNET PROTOCOL DETAIL RECORD</div>
+        <div style="display:inline-block;background:${riskColor}22;border:2px solid ${riskColor};border-radius:8px;padding:12px 30px;">
+          <div style="font-size:11px;letter-spacing:2px;color:#aaa;">OVERALL RISK LEVEL</div>
+          <div style="font-size:28px;font-weight:700;color:${riskColor};">${riskLevel}</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:30px;">
+        ${[
+          ['CASE NUMBER',caseNo],
+          ['INVESTIGATING OFFICER',officer],
+          ['POLICE STATION / UNIT',station],
+          ['SUSPECT / MOBILE',suspect],
+          ['DATA PERIOD',minDate?fmtDate(minDate).split(' ')[0]+' to '+fmtDate(maxDate).split(' ')[0]:'-'],
+          ['REPORT DATE',now.toLocaleDateString('en-IN')],
+        ].map(([l,v])=>`
+          <div style="background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);border-radius:6px;padding:12px;">
+            <div style="font-size:9px;letter-spacing:2px;color:#7aa8cc;margin-bottom:4px;">${l}</div>
+            <div style="font-size:13px;font-weight:600;color:#e0f4ff;">${v}</div>
+          </div>`).join('')}
+      </div>
+
+      <div style="text-align:center;font-size:10px;color:#4a7090;letter-spacing:1px;border-top:1px solid #1e3a5f;padding-top:16px;">
+        Generated by IPDR Analysis Tool v4.0 | ${now.toLocaleString('en-IN')} | CONFIDENTIAL
+      </div>
+    </div>
+
+    <!-- PAGE 2: EXECUTIVE SUMMARY -->
+    <div style="page-break-after:always;padding:40px;background:#fff;color:#1a1a2e;">
+      <div style="border-left:6px solid #0066cc;padding-left:20px;margin-bottom:30px;">
+        <div style="font-size:9px;letter-spacing:3px;color:#666;text-transform:uppercase;">Section 1</div>
+        <div style="font-size:24px;font-weight:700;color:#0066cc;">Executive Summary</div>
+      </div>
+
+      <!-- Key numbers grid -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:30px;">
+        ${[
+          ['📊','Total Records',total.toLocaleString(),'#0066cc'],
+          ['🌐','Unique Dest IPs',uIPs.length,'#0066cc'],
+          ['⬇️','Total Download',formatBytes(totalDL),'#16a34a'],
+          ['⬆️','Total Upload',formatBytes(totalUL),'#16a34a'],
+          ['🔐','VPN Connections',vpnConns.length,vpnConns.length>0?'#dc2626':'#16a34a'],
+          ['📍','Location Records',locRecs.length,'#7c3aed'],
+        ].map(([ic,lb,val,col])=>`
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-top:4px solid ${col};border-radius:8px;padding:16px;text-align:center;">
+            <div style="font-size:24px;margin-bottom:6px;">${ic}</div>
+            <div style="font-size:22px;font-weight:700;color:${col};">${val}</div>
+            <div style="font-size:10px;letter-spacing:1px;color:#64748b;text-transform:uppercase;">${lb}</div>
+          </div>`).join('')}
+      </div>
+
+      <!-- Findings summary box -->
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-left:6px solid #dc2626;border-radius:8px;padding:20px;margin-bottom:24px;">
+        <div style="font-size:14px;font-weight:700;color:#dc2626;margin-bottom:12px;">🚨 KEY FINDINGS</div>
+        <ul style="margin:0;padding-left:20px;line-height:2;font-size:13px;color:#1a1a2e;">
+          ${vpnConns.length>0?`<li><b>VPN/Proxy Use Detected:</b> ${vpnConns.length} connections on ports — ${Object.entries(portGroups).map(([p,d])=>p+' ('+d.info?.name+')').join(', ')}</li>`:''}
+          ${Object.keys(suspCC).length>0?`<li><b>Suspicious Country Connections:</b> ${Object.entries(suspCC).map(([c,n])=>c+' ('+n+' sessions)').join(', ')}</li>`:''}
+          ${crimeLocs.length>0?`<li><b>Crime Scene Presence:</b> ${crimeLocs.length} sessions at crime scene area — ${[...new Set(crimeLocs.map(r=>r.locationName))].join(', ')}</li>`:''}
+          ${suspLocs.length>0?`<li><b>Suspicious Locations Visited:</b> ${suspLocs.length} sessions at suspicious locations</li>`:''}
+          ${nightPct>25?`<li><b>High Night Activity:</b> ${nightPct}% connections between 11PM-6AM</li>`:''}
+          ${topApps.length>0?`<li><b>Most Used App:</b> ${topApps[0][0]} (${topApps[0][1]} sessions)</li>`:''}
+          ${vpnConns.length===0&&Object.keys(suspCC).length===0&&crimeLocs.length===0?'<li>No major suspicious activity detected in network data</li>':''}
+        </ul>
+      </div>
+
+      <!-- Data period timeline -->
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin-bottom:24px;">
+        <div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:12px;letter-spacing:1px;text-transform:uppercase;">Data Period Coverage</div>
+        <div style="display:flex;align-items:center;gap:16px;font-size:13px;">
+          <div><b>Start:</b> ${minDate?fmtDate(minDate):'-'}</div>
+          <div style="flex:1;height:4px;background:linear-gradient(90deg,#0066cc,#00d4ff);border-radius:2px;"></div>
+          <div><b>End:</b> ${maxDate?fmtDate(maxDate):'-'}</div>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:#64748b;">Peak Activity Hour: ${pad(peakHour)}:00 hrs | Night Activity: ${nightPct}%</div>
+      </div>
+    </div>
+
+    <!-- PAGE 3: NETWORK ANALYSIS -->
+    <div style="page-break-after:always;padding:40px;background:#fff;color:#1a1a2e;">
+      <div style="border-left:6px solid #0066cc;padding-left:20px;margin-bottom:30px;">
+        <div style="font-size:9px;letter-spacing:3px;color:#666;text-transform:uppercase;">Section 2</div>
+        <div style="font-size:24px;font-weight:700;color:#0066cc;">Network Analysis — Top Destinations</div>
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:24px;">
+        <thead>
+          <tr style="background:#0f172a;color:#fff;">
+            <th style="padding:10px 12px;text-align:left;">#</th>
+            <th style="padding:10px 12px;text-align:left;">IP Address</th>
+            <th style="padding:10px 12px;text-align:left;">Country</th>
+            <th style="padding:10px 12px;text-align:left;">ISP / Org</th>
+            <th style="padding:10px 12px;text-align:center;">Sessions</th>
+            <th style="padding:10px 12px;text-align:left;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${top10.map(([ip,count],i)=>{
+            const geo=geoCache[ip]||{};
+            const susp=isSuspiciousIP(ip,geo);
+            const vpn=processedData.filter(r=>r.destIP===ip&&VPN_PORTS[r.destPort]).length>0;
+            const bgColor=i%2===0?'#f8fafc':'#fff';
+            const statusColor=susp||vpn?'#dc2626':'#16a34a';
+            const statusText=vpn?'VPN/PROXY':susp?'SUSPICIOUS':'Normal';
+            return `<tr style="background:${bgColor};">
+              <td style="padding:9px 12px;color:#64748b;">${i+1}</td>
+              <td style="padding:9px 12px;font-family:monospace;font-weight:600;color:#0066cc;">${ip}</td>
+              <td style="padding:9px 12px;">${geo.country||'Unknown'} ${geo.countryCode?'('+geo.countryCode+')':''}</td>
+              <td style="padding:9px 12px;font-size:11px;color:#475569;">${geo.org||'-'}</td>
+              <td style="padding:9px 12px;text-align:center;font-weight:700;">${count}</td>
+              <td style="padding:9px 12px;"><span style="background:${statusColor}22;color:${statusColor};border:1px solid ${statusColor}44;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;">${statusText}</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+
+      <!-- VPN Section -->
+      ${Object.keys(portGroups).length>0?`
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:20px;margin-bottom:20px;">
+        <div style="font-size:14px;font-weight:700;color:#dc2626;margin-bottom:14px;">🔐 VPN / PROXY CONNECTIONS DETECTED</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr style="background:#fee2e2;">
+            <th style="padding:8px 12px;text-align:left;color:#dc2626;">Port</th>
+            <th style="padding:8px 12px;text-align:left;color:#dc2626;">Service</th>
+            <th style="padding:8px 12px;text-align:left;color:#dc2626;">Risk</th>
+            <th style="padding:8px 12px;text-align:center;color:#dc2626;">Count</th>
+          </tr></thead>
+          <tbody>
+            ${Object.entries(portGroups).map(([p,d])=>`
+              <tr><td style="padding:8px 12px;font-family:monospace;font-weight:700;">${p}</td>
+              <td style="padding:8px 12px;">${d.info?.name||'Unknown'}</td>
+              <td style="padding:8px 12px;color:#dc2626;font-weight:700;">${d.info?.risk}</td>
+              <td style="padding:8px 12px;text-align:center;font-weight:700;">${d.count}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`:''}
+
+      <!-- Suspicious Countries -->
+      ${Object.keys(suspCC).length>0?`
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:20px;">
+        <div style="font-size:14px;font-weight:700;color:#d97706;margin-bottom:10px;">🌍 SUSPICIOUS COUNTRY CONNECTIONS</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          ${Object.entries(suspCC).map(([c,n])=>`<span style="background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:6px 14px;font-size:12px;"><b>${c}</b>: ${n} sessions</span>`).join('')}
+        </div>
+      </div>`:''}
+    </div>
+
+    <!-- PAGE 4: SOCIAL MEDIA + LOCATION -->
+    <div style="page-break-after:always;padding:40px;background:#fff;color:#1a1a2e;">
+      <div style="border-left:6px solid #7c3aed;padding-left:20px;margin-bottom:30px;">
+        <div style="font-size:9px;letter-spacing:3px;color:#666;text-transform:uppercase;">Section 3</div>
+        <div style="font-size:24px;font-weight:700;color:#7c3aed;">Social Media & App Usage</div>
+      </div>
+
+      ${topApps.length>0?`
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:24px;">
+        <thead><tr style="background:#4c1d95;color:#fff;">
+          <th style="padding:10px 12px;text-align:left;">App</th>
+          <th style="padding:10px 12px;text-align:center;">Sessions</th>
+          <th style="padding:10px 12px;text-align:left;">Data Used</th>
+          <th style="padding:10px 12px;text-align:left;">Investigation Note</th>
+        </tr></thead>
+        <tbody>
+          ${topApps.map(([app,count],i)=>{
+            const info=SOCIAL_MEDIA_DB[app]||{};
+            const sessions=socialRows.filter(r=>r.socialApp===app);
+            const data=sessions.reduce((s,r)=>s+r.downloadBytes+r.uploadBytes,0);
+            return `<tr style="background:${i%2===0?'#f5f3ff':'#fff'}">
+              <td style="padding:9px 12px;font-weight:600;color:#4c1d95;">${info.icon||'📱'} ${app.replace('_',' ')}</td>
+              <td style="padding:9px 12px;text-align:center;font-weight:700;">${count}</td>
+              <td style="padding:9px 12px;font-family:monospace;">${formatBytes(data)}</td>
+              <td style="padding:9px 12px;font-size:11px;color:#475569;">${info.crimeUse||'-'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`:`<div style="background:#f1f5f9;border-radius:8px;padding:16px;color:#64748b;font-size:13px;">No social media activity detected in available data.</div>`}
+
+      <!-- Location Section -->
+      <div style="border-left:6px solid #059669;padding-left:20px;margin:30px 0 20px;">
+        <div style="font-size:9px;letter-spacing:3px;color:#666;text-transform:uppercase;">Section 4</div>
+        <div style="font-size:24px;font-weight:700;color:#059669;">Location Analysis</div>
+      </div>
+
+      ${locRecs.length>0?`
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+        ${[
+          ['📍','Total Location Records',locRecs.length,'#059669'],
+          ['🏠','Home Sessions',locRecs.filter(r=>r.locationType==='home').length,'#0066cc'],
+          ['🚨','Suspicious',suspLocs.length,'#d97706'],
+          ['☠️','Crime Scene',crimeLocs.length,'#dc2626'],
+        ].map(([ic,lb,val,col])=>`
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-top:4px solid ${col};border-radius:8px;padding:14px;text-align:center;">
+            <div style="font-size:20px;">${ic}</div>
+            <div style="font-size:20px;font-weight:700;color:${col};">${val}</div>
+            <div style="font-size:9px;letter-spacing:1px;color:#64748b;text-transform:uppercase;">${lb}</div>
+          </div>`).join('')}
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px;">
+        <thead><tr style="background:#064e3b;color:#fff;">
+          <th style="padding:8px 10px;text-align:left;">Location</th>
+          <th style="padding:8px 10px;text-align:left;">Cell Tower</th>
+          <th style="padding:8px 10px;text-align:left;">Type</th>
+          <th style="padding:8px 10px;text-align:center;">Sessions</th>
+          <th style="padding:8px 10px;text-align:left;">Coordinates</th>
+        </tr></thead>
+        <tbody>
+          ${[...new Set(locRecs.map(r=>r.locationName).filter(Boolean))].map((loc,i)=>{
+            const locRows=locRecs.filter(r=>r.locationName===loc);
+            const t=locRows[0];
+            const typeColor=t.locationType==='crime'?'#dc2626':t.locationType==='suspicious'?'#d97706':t.locationType==='home'?'#059669':'#0066cc';
+            return `<tr style="background:${i%2===0?'#f0fdf4':'#fff'}">
+              <td style="padding:8px 10px;font-weight:600;">${loc}</td>
+              <td style="padding:8px 10px;font-family:monospace;font-size:10px;color:#475569;">${t.cellTower||'-'}</td>
+              <td style="padding:8px 10px;"><span style="background:${typeColor}22;color:${typeColor};border:1px solid ${typeColor}44;border-radius:3px;padding:1px 6px;font-size:9px;font-weight:700;text-transform:uppercase;">${t.locationType}</span></td>
+              <td style="padding:8px 10px;text-align:center;font-weight:700;">${locRows.length}</td>
+              <td style="padding:8px 10px;font-family:monospace;font-size:10px;">${t.lat?.toFixed(4)||'-'}, ${t.lon?.toFixed(4)||'-'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      `:`<div style="background:#f1f5f9;border-radius:8px;padding:16px;color:#64748b;font-size:13px;">No location data available. Upload IPDR file with Latitude/Longitude columns.</div>`}
+    </div>
+
+    <!-- PAGE 5: LEGAL NOTES + SIGNATURE -->
+    <div style="padding:40px;background:#fff;color:#1a1a2e;">
+      <div style="border-left:6px solid #475569;padding-left:20px;margin-bottom:30px;">
+        <div style="font-size:9px;letter-spacing:3px;color:#666;text-transform:uppercase;">Section 5</div>
+        <div style="font-size:24px;font-weight:700;color:#475569;">Legal Notes & Declaration</div>
+      </div>
+
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin-bottom:24px;font-size:13px;line-height:2;color:#374151;">
+        <ol style="margin:0;padding-left:20px;">
+          <li>Yeh report IPDR data ke analysis par based hai jo telecom operator ne proper legal process ke under provide kiya hai.</li>
+          <li>IP Geolocation data approximate hai aur ip-api.com se source kiya gaya hai. Exact physical location ke liye ISP se confirm karna hoga.</li>
+          <li>VPN detection known port numbers par based hai — yeh exhaustive nahi hai. Advanced VPN obfuscation detect nahi ho sakti.</li>
+          <li>Social media detection IP ranges par based hai jo time ke saath change ho sakti hain.</li>
+          <li>Yeh report corroborating evidence ke saath use ki jaye — iske alapad sirf is par rely nahi karna chahiye.</li>
+          <li>Yeh document strictly confidential hai aur sirf authorized law enforcement personnel ke liye hai.</li>
+          <li>Is report ki information IT Act 2000 aur CrPC ke under collect ki gayi hai.</li>
+        </ol>
+      </div>
+
+      <!-- Signature Section -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:60px;">
+        <div>
+          <div style="border-top:2px solid #1a1a2e;padding-top:12px;margin-top:60px;">
+            <div style="font-weight:700;font-size:14px;">${officer}</div>
+            <div style="color:#64748b;font-size:12px;">${station}</div>
+            <div style="color:#64748b;font-size:12px;">Date: ${now.toLocaleDateString('en-IN')}</div>
+          </div>
+        </div>
+        <div>
+          <div style="border-top:2px solid #1a1a2e;padding-top:12px;margin-top:60px;">
+            <div style="font-weight:700;font-size:14px;">Supervisor / SP Cyber Crime</div>
+            <div style="color:#64748b;font-size:12px;">Reviewing Officer</div>
+            <div style="color:#64748b;font-size:12px;">Date: _______________</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;letter-spacing:1px;">
+        IPDR ANALYSIS TOOL v4.0 | Case: ${caseNo} | Generated: ${now.toLocaleString('en-IN')} | CONFIDENTIAL — FOR OFFICIAL USE ONLY
+      </div>
+    </div>
+  </div>`;
+}
+
+  const caseNo = document.getElementById('caseNumber').value || 'N/A';
+  const officer = document.getElementById('officerName').value || 'N/A';
+  const station = document.getElementById('stationName').value || 'N/A';
+  const suspect = document.getElementById('suspectName').value || 'N/A';
+  const now = new Date();
+
+  const total = processedData.length;
+  const uniqueIPs = [...new Set(processedData.map(r=>r.destIP))].length;
+  const vpnConns = processedData.filter(r=>VPN_PORTS[r.destPort]).length;
+  const totalDL = processedData.reduce((s,r)=>s+r.downloadBytes,0);
+  const totalUL = processedData.reduce((s,r)=>s+r.uploadBytes,0);
+
+  const dates = processedData.filter(r=>r.date).map(r=>r.date);
+  const minDate = dates.length ? new Date(Math.min(...dates)) : null;
+  const maxDate = dates.length ? new Date(Math.max(...dates)) : null;
+
+  const portGroups = {};
+  processedData.forEach(r=>{
+    if(VPN_PORTS[r.destPort]){
+      portGroups[r.destPort] = (portGroups[r.destPort]||0)+1;
+    }
+  });
+
+  const suspCountries = {};
+  processedData.forEach(r=>{
+    const geo = geoCache[r.destIP];
+    if(geo && COUNTRIES_SUSPICIOUS.includes(geo.countryCode)){
+      suspCountries[geo.country] = (suspCountries[geo.country]||0)+1;
+    }
+  });
+
+  document.getElementById('reportContent').innerHTML = `
+    <div class="report-section">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:24px;">
+        <div>
+          <div style="font-family:var(--font-head);font-size:28px;font-weight:700;letter-spacing:4px;color:var(--accent)">
+            🛡️ IPDR ANALYSIS REPORT
+          </div>
+          <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);margin-top:4px;">
+            CYBER CRIME INVESTIGATION — CONFIDENTIAL
+          </div>
+        </div>
+        <div style="text-align:right;font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">
+          Generated: ${now.toLocaleString('en-IN')}<br>
+          Tool: IPDR Analysis v2.0
+        </div>
+      </div>
+      
+      <div class="info-grid" style="margin-bottom:20px;">
+        <div class="info-item">
+          <div class="info-label">Case Number</div>
+          <div class="info-val">${caseNo}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Investigating Officer</div>
+          <div class="info-val">${officer}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Police Station / Unit</div>
+          <div class="info-val">${station}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Suspect / Mobile</div>
+          <div class="info-val">${suspect}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Data Period</div>
+          <div class="info-val">${minDate?fmtDate(minDate)+' to ':''} ${maxDate?fmtDate(maxDate):'-'}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Report Date</div>
+          <div class="info-val">${now.toLocaleDateString('en-IN')}</div>
+        </div>
+      </div>
+
+      <div style="border:2px solid var(--border);border-radius:8px;padding:16px;margin-bottom:20px;">
+        <div style="font-family:var(--font-head);font-size:14px;letter-spacing:2px;color:var(--accent);margin-bottom:12px;">
+          📊 EXECUTIVE SUMMARY
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:12px;">
+          <tr><td style="padding:6px 0;color:var(--text-muted);width:200px;">Total IPDR Records</td><td style="color:var(--text-primary);font-weight:700;">${total.toLocaleString()}</td></tr>
+          <tr><td style="padding:6px 0;color:var(--text-muted);">Unique Destination IPs</td><td>${uniqueIPs}</td></tr>
+          <tr><td style="padding:6px 0;color:var(--text-muted);">Total Data Transferred</td><td>${formatBytes(totalDL+totalUL)} (DL: ${formatBytes(totalDL)} | UL: ${formatBytes(totalUL)})</td></tr>
+          <tr><td style="padding:6px 0;color:var(--text-muted);">VPN/Proxy Connections</td><td style="color:${vpnConns>0?'#ff3366':'#39ff14'};font-weight:700;">${vpnConns} ${vpnConns>0?'⚠️ DETECTED':'✅ NONE'}</td></tr>
+          <tr><td style="padding:6px 0;color:var(--text-muted);">Suspicious Country Connections</td><td style="color:${Object.keys(suspCountries).length>0?'#ffaa00':'#39ff14'};">${Object.keys(suspCountries).join(', ')||'None'}</td></tr>
+        </table>
+      </div>
+
+      ${vpnConns > 0 ? `
+      <div style="background:rgba(255,51,102,0.08);border:1px solid rgba(255,51,102,0.3);border-radius:8px;padding:16px;margin-bottom:20px;">
+        <div style="font-family:var(--font-head);font-size:14px;letter-spacing:2px;color:#ff3366;margin-bottom:12px;">
+          🚨 VPN/PROXY FINDINGS
+        </div>
+        ${Object.entries(portGroups).map(([p,c])=>`
+          <div style="font-family:var(--font-mono);font-size:12px;padding:4px 0;color:var(--text-primary);">
+            ▸ Port ${p} (${VPN_PORTS[parseInt(p)]?.name||'Unknown'}): ${c} connections — Risk: <span style="color:#ff3366;">${VPN_PORTS[parseInt(p)]?.risk||'N/A'}</span>
+          </div>`).join('')}
+      </div>` : ''}
+
+      <div style="border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:20px;">
+        <div style="font-family:var(--font-head);font-size:14px;letter-spacing:2px;color:var(--accent);margin-bottom:12px;">
+          🌐 TOP 10 DESTINATION IPs
+        </div>
+        <table class="data-table" style="font-size:11px;">
+          <thead><tr><th>#</th><th>IP Address</th><th>Country</th><th>ISP/Org</th><th>Connections</th><th>Remarks</th></tr></thead>
+          <tbody>
+          ${getTopIPs(10).map((x,i)=>{
+            const geo = geoCache[x[0]]||{};
+            return `<tr>
+              <td>${i+1}</td>
+              <td>${x[0]}</td>
+              <td>${geo.country||'Unknown'}</td>
+              <td>${geo.org||'-'}</td>
+              <td>${x[1]}</td>
+              <td>${isSuspiciousIP(x[0],geo)?'⚠️ SUSPICIOUS':VPN_PORTS[x[0]]?'VPN/PROXY':'Normal'}</td>
+            </tr>`;
+          }).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <div style="border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:20px;">
+        <div style="font-family:var(--font-head);font-size:14px;letter-spacing:2px;color:var(--accent);margin-bottom:12px;">
+          ⚖️ LEGAL NOTES
+        </div>
+        <div style="font-family:var(--font-body);font-size:12px;color:var(--text-secondary);line-height:1.8;">
+          1. This report is based on IPDR data provided by the telecom operator under proper legal process.<br>
+          2. IP Geolocation data is approximate and sourced from ip-api.com.<br>
+          3. VPN detection is based on known port numbers and may not cover all VPN services.<br>
+          4. This report should be corroborated with other investigation materials.<br>
+          5. This document is confidential and for law enforcement use only.
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;margin-top:40px;padding-top:20px;border-top:1px solid var(--border);">
+        <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);">
+          Signature: ___________________<br>
+          ${officer}<br>
+          ${station}
+        </div>
+        <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);text-align:right;">
+          Date: ${now.toLocaleDateString('en-IN')}<br>
+          Case: ${caseNo}<br>
+          <span style="font-size:10px;">IPDR Analysis Tool v2.0</span>
+        </div>
+      </div>
+    </div>`;
+
+function exportReport(){
+  if(!isDataLoaded){ alert('⚠️ Pehle data load karo!'); return; }
+  generateReport();
+  showTab('report');
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>{ t.classList.toggle('active', i===6); });
+  setTimeout(()=>window.print(), 500);
+}
+
+// ============================================================
+// SOCIAL MEDIA DETECTION ENGINE
+// ============================================================
+
+const SOCIAL_MEDIA_DB = {
+  WhatsApp: {
+    icon:'💬', color:'#25D366', bg:'rgba(37,211,102,0.1)', border:'rgba(37,211,102,0.3)',
+    ipRanges: ['31.13.','157.240.','179.60.','185.60.'],
+    ports: [443, 80, 5222, 5223],
+    asn_keywords: ['meta','facebook','whatsapp'],
+    description: 'Messaging, Voice/Video Calls, File Sharing',
+    crimeUse: 'Planning, coordination, media sharing, group communication'
+  },
+  Facebook: {
+    icon:'👤', color:'#1877F2', bg:'rgba(24,119,242,0.1)', border:'rgba(24,119,242,0.3)',
+    ipRanges: ['31.13.','157.240.','179.60.','185.60.','66.220.'],
+    ports: [443, 80],
+    asn_keywords: ['facebook','meta'],
+    description: 'Social Networking, Marketplace, Groups',
+    crimeUse: 'Fake profiles, fraud, selling stolen goods, recruitment'
+  },
+  Instagram: {
+    icon:'📸', color:'#E1306C', bg:'rgba(225,48,108,0.1)', border:'rgba(225,48,108,0.3)',
+    ipRanges: ['157.240.','31.13.'],
+    ports: [443],
+    asn_keywords: ['instagram','meta','facebook'],
+    description: 'Photo/Video Sharing, DMs',
+    crimeUse: 'Honey trapping, blackmail, fake identity, drugs marketing'
+  },
+  Telegram: {
+    icon:'✈️', color:'#0088CC', bg:'rgba(0,136,204,0.1)', border:'rgba(0,136,204,0.3)',
+    ipRanges: ['149.154.','91.108.','95.161.'],
+    ports: [443, 80, 5222],
+    asn_keywords: ['telegram'],
+    description: 'Encrypted Messaging, Channels, Bots',
+    crimeUse: 'Encrypted crime coordination, dark channels, data leaks, drug deals'
+  },
+  YouTube: {
+    icon:'▶️', color:'#FF0000', bg:'rgba(255,0,0,0.1)', border:'rgba(255,0,0,0.3)',
+    ipRanges: ['142.250.','216.58.','172.217.','74.125.','64.233.'],
+    ports: [443, 80],
+    asn_keywords: ['google','youtube'],
+    description: 'Video Streaming',
+    crimeUse: 'Research, radicalization content, tutorials for crime'
+  },
+  Twitter_X: {
+    icon:'🐦', color:'#1DA1F2', bg:'rgba(29,161,242,0.1)', border:'rgba(29,161,242,0.3)',
+    ipRanges: ['104.244.','192.133.77.','199.16.'],
+    ports: [443, 80],
+    asn_keywords: ['twitter','x corp'],
+    description: 'Microblogging, DMs',
+    crimeUse: 'Spreading rumors, fake news, threats, anonymous accounts'
+  },
+  Snapchat: {
+    icon:'👻', color:'#FFFC00', bg:'rgba(255,252,0,0.1)', border:'rgba(255,252,0,0.3)',
+    ipRanges: ['35.190.','23.22.','52.1.','54.80.'],
+    ports: [443],
+    asn_keywords: ['snapchat','snap inc'],
+    description: 'Disappearing Messages/Photos',
+    crimeUse: 'Evidence-proof communication — messages auto-delete, drugs, obscene content'
+  },
+  TikTok: {
+    icon:'🎵', color:'#FF0050', bg:'rgba(255,0,80,0.1)', border:'rgba(255,0,80,0.3)',
+    ipRanges: ['23.227.38.','184.150.','119.96.','104.19.'],
+    ports: [443],
+    asn_keywords: ['bytedance','tiktok','musically'],
+    description: 'Short Video Platform',
+    crimeUse: 'Radicalization, data harvesting concerns, drug glorification videos'
+  },
+  Google: {
+    icon:'🔍', color:'#4285F4', bg:'rgba(66,133,244,0.1)', border:'rgba(66,133,244,0.3)',
+    ipRanges: ['8.8.8.','8.8.4.','142.250.','172.217.','216.58.','74.125.'],
+    ports: [443, 80, 53],
+    asn_keywords: ['google'],
+    description: 'Search, Gmail, Maps, Drive',
+    crimeUse: 'Searching crime methods, location lookup, anonymous email'
+  },
+  LinkedIn: {
+    icon:'💼', color:'#0A66C2', bg:'rgba(10,102,194,0.1)', border:'rgba(10,102,194,0.3)',
+    ipRanges: ['108.174.','13.107.','40.74.'],
+    ports: [443],
+    asn_keywords: ['linkedin','microsoft'],
+    description: 'Professional Networking',
+    crimeUse: 'Corporate espionage, identity theft, phishing targets'
+  },
+  ShareChat: {
+    icon:'🇮🇳', color:'#FF6B00', bg:'rgba(255,107,0,0.1)', border:'rgba(255,107,0,0.3)',
+    ipRanges: ['103.21.','13.126.','52.66.'],
+    ports: [443],
+    asn_keywords: ['sharechat','mohalla'],
+    description: 'Indian Regional Social Media',
+    crimeUse: 'Regional fake news, communal content, local fraud'
+  },
+  Truecaller: {
+    icon:'📞', color:'#009688', bg:'rgba(0,150,136,0.1)', border:'rgba(0,150,136,0.3)',
+    ipRanges: ['13.234.','52.66.','35.154.'],
+    ports: [443],
+    asn_keywords: ['truecaller'],
+    description: 'Caller ID & Spam Detection',
+    crimeUse: 'Number lookup, identity tracing by suspects'
+  },
+};
+
+let socialProcessed = [];
+
+function detectSocialMedia(record){
+  const ip = record.destIP || '';
+  const port = record.destPort;
+  const org = (geoCache[ip]?.org || '').toLowerCase();
+
+  for(const [app, data] of Object.entries(SOCIAL_MEDIA_DB)){
+    const ipMatch = data.ipRanges.some(range => ip.startsWith(range));
+    const portMatch = data.ports.includes(port);
+    const orgMatch = data.asn_keywords.some(kw => org.includes(kw));
+    if(ipMatch || orgMatch){
+      return app;
+    }
+  }
+  return null;
+}
+
+function renderSocialMedia(){
+  if(!isDataLoaded) return;
+
+  // Tag each record with social media app
+  socialProcessed = processedData.map(r=>({
+    ...r,
+    socialApp: detectSocialMedia(r)
+  })).filter(r=>r.socialApp);
+
+  // Group by app
+  const appStats = {};
+  socialProcessed.forEach(r=>{
+    const app = r.socialApp;
+    if(!appStats[app]) appStats[app]={
+      count:0, dl:0, ul:0, sessions:[], nightCount:0, firstSeen:r.date, lastSeen:r.date
+    };
+    appStats[app].count++;
+    appStats[app].dl += r.downloadBytes;
+    appStats[app].ul += r.uploadBytes;
+    appStats[app].sessions.push(r);
+    if(r.date){
+      const h = r.date.getHours();
+      if(h>=23||h<6) appStats[app].nightCount++;
+      if(r.date < appStats[app].firstSeen) appStats[app].firstSeen = r.date;
+      if(r.date > appStats[app].lastSeen) appStats[app].lastSeen = r.date;
+    }
+  });
+
+  const totalSocial = socialProcessed.length;
+  const totalApps = Object.keys(appStats).length;
+  const mostUsedApp = Object.entries(appStats).sort((a,b)=>b[1].count-a[1].count)[0];
+  const totalSocialData = socialProcessed.reduce((s,r)=>s+r.downloadBytes+r.uploadBytes,0);
+
+  // Stats
+  document.getElementById('socialStats').innerHTML = `
+    <div class="stat-card blue">
+      <div class="stat-icon">📱</div>
+      <div class="stat-value">${totalApps}</div>
+      <div class="stat-label">Apps Detected</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-icon">📊</div>
+      <div class="stat-value">${totalSocial}</div>
+      <div class="stat-label">Social Sessions</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-icon">🏆</div>
+      <div class="stat-value" style="font-size:16px;">${mostUsedApp?mostUsedApp[0]:'-'}</div>
+      <div class="stat-label">Most Used App</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-icon">📡</div>
+      <div class="stat-value">${formatBytes(totalSocialData)}</div>
+      <div class="stat-label">Total Social Data</div>
+    </div>`;
+
+  // App Cards
+  const appsGrid = document.getElementById('socialAppsGrid');
+  appsGrid.innerHTML = Object.entries(appStats)
+    .sort((a,b)=>b[1].count-a[1].count)
+    .map(([app,stats])=>{
+      const info = SOCIAL_MEDIA_DB[app];
+      const nightPct = stats.count>0 ? Math.round(stats.nightCount/stats.count*100) : 0;
+      const totalData = stats.dl + stats.ul;
+      return `
+      <div style="background:${info.bg};border:1px solid ${info.border};border-radius:12px;padding:20px;transition:all 0.3s;" 
+           onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+          <span style="font-size:32px;">${info.icon}</span>
+          <div>
+            <div style="font-family:var(--font-head);font-size:16px;font-weight:700;color:${info.color};">${app.replace('_',' ')}</div>
+            <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);">${info.description}</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+          <div style="background:rgba(0,0,0,0.2);border-radius:6px;padding:8px;text-align:center;">
+            <div style="font-family:var(--font-mono);font-size:18px;color:${info.color};font-weight:700;">${stats.count}</div>
+            <div style="font-size:9px;color:var(--text-muted);letter-spacing:1px;">SESSIONS</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.2);border-radius:6px;padding:8px;text-align:center;">
+            <div style="font-family:var(--font-mono);font-size:16px;color:${info.color};">${formatBytes(totalData)}</div>
+            <div style="font-size:9px;color:var(--text-muted);letter-spacing:1px;">DATA USED</div>
+          </div>
+        </div>
+        <div style="margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-bottom:4px;">
+            <span>Usage share</span><span>${Math.round(stats.count/totalSocial*100)}%</span>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-fill" style="width:${Math.round(stats.count/totalSocial*100)}%;background:${info.color};"></div>
+          </div>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);line-height:1.8;">
+          🌙 Night usage: <span style="color:${nightPct>20?'#ff3366':'#39ff14'}">${nightPct}%</span><br>
+          📅 First: ${fmtDate(stats.firstSeen)}<br>
+          📅 Last: ${fmtDate(stats.lastSeen)}
+        </div>
+        <div style="margin-top:10px;padding:8px;background:rgba(255,170,0,0.08);border-radius:6px;font-size:10px;color:#ffaa00;font-family:var(--font-body);">
+          ⚠️ <b>Crime use:</b> ${info.crimeUse}
+        </div>
+      </div>`;
+    }).join('');
+
+  // Timeline chart
+  const hourData = {};
+  Object.keys(SOCIAL_MEDIA_DB).forEach(app=>{
+    hourData[app] = new Array(24).fill(0);
+  });
+  socialProcessed.forEach(r=>{
+    if(r.date && r.socialApp) hourData[r.socialApp][r.date.getHours()]++;
+  });
+
+  const colors = Object.keys(SOCIAL_MEDIA_DB).map(app=>SOCIAL_MEDIA_DB[app].color);
+  const hours = Array.from({length:24},(_,i)=>pad(i)+':00');
+
+  destroyChart('socialTimelineChart');
+  const ctx1 = document.getElementById('socialTimelineChart').getContext('2d');
+  charts.socialTimelineChart = new Chart(ctx1,{
+    type:'line',
+    data:{
+      labels:hours,
+      datasets: Object.entries(appStats).sort((a,b)=>b[1].count-a[1].count).slice(0,6).map(([app])=>({
+        label: app.replace('_',' '),
+        data: hourData[app],
+        borderColor: SOCIAL_MEDIA_DB[app].color,
+        backgroundColor: SOCIAL_MEDIA_DB[app].bg,
+        fill: false,
+        tension: 0.4,
+        pointRadius: 2,
+      }))
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{labels:{color:'#7aa8cc',font:{size:10}}}},
+      scales:{
+        x:{ticks:{color:'#7aa8cc',font:{size:9}},grid:{color:'rgba(30,58,95,0.3)'}},
+        y:{ticks:{color:'#7aa8cc'},grid:{color:'rgba(30,58,95,0.3)'}}
+      }
+    }
+  });
+
+  // Pie chart
+  const appEntries = Object.entries(appStats).sort((a,b)=>b[1].dl+b[1].ul-a[1].dl-a[1].ul);
+  destroyChart('socialPieChart');
+  const ctx2 = document.getElementById('socialPieChart').getContext('2d');
+  charts.socialPieChart = new Chart(ctx2,{
+    type:'doughnut',
+    data:{
+      labels:appEntries.map(([app])=>app.replace('_',' ')),
+      datasets:[{
+        data:appEntries.map(([,s])=>s.dl+s.ul),
+        backgroundColor:appEntries.map(([app])=>SOCIAL_MEDIA_DB[app].color+'bb'),
+        borderWidth:2,borderColor:'#080c14'
+      }]
+    },
+    options:{responsive:true,plugins:{legend:{labels:{color:'#7aa8cc',font:{size:10}}}}}
+  });
+
+  // Bar chart
+  destroyChart('socialBarChart');
+  const ctx3 = document.getElementById('socialBarChart').getContext('2d');
+  charts.socialBarChart = new Chart(ctx3,{
+    type:'bar',
+    data:{
+      labels:appEntries.map(([app])=>app.replace('_',' ')),
+      datasets:[{
+        label:'Sessions',
+        data:appEntries.map(([,s])=>s.count),
+        backgroundColor:appEntries.map(([app])=>SOCIAL_MEDIA_DB[app].color+'99'),
+        borderColor:appEntries.map(([app])=>SOCIAL_MEDIA_DB[app].color),
+        borderWidth:1,borderRadius:4
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#7aa8cc',font:{size:9}},grid:{color:'rgba(30,58,95,0.3)'}},
+        y:{ticks:{color:'#7aa8cc'},grid:{color:'rgba(30,58,95,0.3)'}}
+      }
+    }
+  });
+
+  // Crime behavioral analysis
+  const crimeDiv = document.getElementById('crimeAnalysis');
+  const crimeFindings = [];
+
+  if(appStats['Telegram']){
+    crimeFindings.push({
+      icon:'🚨', risk:'CRITICAL',
+      title:'TELEGRAM USE DETECTED',
+      detail:`${appStats['Telegram'].count} sessions detected. Telegram end-to-end encrypted hai aur law enforcement ke requests often nahi maanta. Crime coordination, data leak channels ke liye commonly used.`,
+      action:'Telegram server logs ke liye legal notice bhejo. Device ka forensic analysis karo.'
+    });
+  }
+  if(appStats['Snapchat']){
+    crimeFindings.push({
+      icon:'⚠️', risk:'HIGH',
+      title:'SNAPCHAT USE — EVIDENCE DELETION RISK',
+      detail:`${appStats['Snapchat'].count} sessions. Snapchat messages auto-delete hote hain. Suspect ne evidence-proof communication use ki ho sakti hai.`,
+      action:'Snap Inc. ko legal preservation request bhejo immediately.'
+    });
+  }
+  const nightApps = Object.entries(appStats).filter(([,s])=>s.nightCount/s.count>0.25);
+  if(nightApps.length>0){
+    crimeFindings.push({
+      icon:'🌙', risk:'HIGH',
+      title:'UNUSUAL NIGHT ACTIVITY — '+ nightApps.map(([a])=>a).join(', '),
+      detail:`Raat 11PM-6AM ke beech heavy social media usage. ${nightApps[0][1].nightCount} night sessions detected. Normal users iss time itna active nahi hote.`,
+      action:'Night sessions ki specific IPs aur content type check karo. Waqt-e-jurm se correlate karo.'
+    });
+  }
+  if(appStats['WhatsApp'] && appStats['WhatsApp'].ul > 10*1024*1024){
+    crimeFindings.push({
+      icon:'📤', risk:'HIGH',
+      title:'HEAVY WHATSAPP UPLOAD DETECTED',
+      detail:`${formatBytes(appStats['WhatsApp'].ul)} data upload hua WhatsApp se. Large files (photos, videos, documents) share ki gayi ho sakti hain.`,
+      action:'WhatsApp ke liye Meta ko legal request bhejo. IMEI se device forensics karo.'
+    });
+  }
+  if(appStats['Facebook'] && appStats['Instagram']){
+    crimeFindings.push({
+      icon:'🎭', risk:'MEDIUM',
+      title:'MULTIPLE META PLATFORMS USE',
+      detail:`Facebook aur Instagram dono use ki gayi. Suspect ke multiple accounts ho sakte hain. Fake profiles possible.`,
+      action:'Meta ke saath legal process se account details, login IPs, aur device info maango.'
+    });
+  }
+  if(totalApps >= 4){
+    crimeFindings.push({
+      icon:'📱', risk:'MEDIUM',
+      title:`${totalApps} SOCIAL APPS — HIGH DIGITAL FOOTPRINT`,
+      detail:`Suspect ${totalApps} alag social media platforms use karta hai. Har platform se alag evidence milne ki sambhavna hai.`,
+      action:'Sab platforms pe simultaneously legal notices bhejo taaki data delete na ho.'
+    });
+  }
+
+  if(crimeFindings.length===0){
+    crimeDiv.innerHTML='<div class="notice">✅ Koi major suspicious social media pattern nahi mila.</div>';
+  } else {
+    crimeDiv.innerHTML = crimeFindings.map(f=>`
+      <div class="vpn-alert" style="border-left-color:${f.risk==='CRITICAL'?'#ff3366':f.risk==='HIGH'?'#ffaa00':'#00d4ff'};margin-bottom:12px;">
+        <div class="alert-icon">${f.icon}</div>
+        <div class="alert-body" style="flex:1;">
+          <div class="alert-title" style="color:${f.risk==='CRITICAL'?'#ff3366':f.risk==='HIGH'?'#ffaa00':'#00d4ff'}">${f.title}</div>
+          <div class="alert-detail" style="margin:6px 0;">${f.detail}</div>
+          <div style="font-size:11px;color:#39ff14;font-family:var(--font-mono);">▸ ACTION: ${f.action}</div>
+        </div>
+        <span class="badge ${f.risk==='CRITICAL'?'badge-danger':f.risk==='HIGH'?'badge-warning':'badge-info'}">${f.risk}</span>
+      </div>`).join('');
+  }
+
+  // Populate app filter dropdown
+  const appSel = document.getElementById('socialAppFilter');
+  appSel.innerHTML = '<option value="">All Apps</option>' + 
+    Object.keys(appStats).map(app=>`<option value="${app}">${app.replace('_',' ')}</option>`).join('');
+
+  filterSocialTable();
+}
+
+function filterSocialTable(){
+  const appFilter = document.getElementById('socialAppFilter')?.value || '';
+  const timeFilter = document.getElementById('socialTimeFilter')?.value || 'all';
+  const showFilter = document.getElementById('socialShowFilter')?.value || 'all';
+  const now = new Date();
+
+  let filtered = socialProcessed.filter(r=>{
+    if(appFilter && r.socialApp !== appFilter) return false;
+    if(r.date){
+      const diff = (now-r.date)/86400000;
+      if(timeFilter==='1d' && diff>1) return false;
+      if(timeFilter==='7d' && diff>7) return false;
+      if(timeFilter==='30d' && diff>30) return false;
+    }
+    if(showFilter==='night' && r.date){
+      const h=r.date.getHours();
+      if(!(h>=23||h<6)) return false;
+    }
+    if(showFilter==='heavy' && (r.downloadBytes+r.uploadBytes)<1048576) return false;
+    return true;
+  });
+
+  const tbody = document.getElementById('socialTableBody');
+  tbody.innerHTML = filtered.slice(0,300).map(r=>{
+    const info = SOCIAL_MEDIA_DB[r.socialApp];
+    const h = r.date?.getHours();
+    const isNight = h>=23||h<6;
+    const isHeavy = (r.downloadBytes+r.uploadBytes)>5*1024*1024;
+    return `<tr>
+      <td>
+        <span style="font-size:18px;">${info?.icon||'📱'}</span>
+        <span style="font-family:var(--font-head);font-size:12px;color:${info?.color||'#00d4ff'};margin-left:6px;">${r.socialApp?.replace('_',' ')}</span>
+      </td>
+      <td style="font-family:var(--font-mono);font-size:11px;">${r.rawTimestamp}${isNight?'<span class="badge badge-danger" style="margin-left:6px;font-size:8px;">NIGHT</span>':''}</td>
+      <td style="font-family:var(--font-mono);font-size:11px;color:var(--accent)">${r.destIP}</td>
+      <td style="font-family:var(--font-mono)">${r.destPort}</td>
+      <td style="font-family:var(--font-mono);font-size:11px;">${r.rawDuration||'-'}</td>
+      <td style="font-family:var(--font-mono);font-size:11px;">${formatBytes(r.downloadBytes)}</td>
+      <td style="font-family:var(--font-mono);font-size:11px;">${formatBytes(r.uploadBytes)}${isHeavy?'<span class="badge badge-warning" style="margin-left:4px;font-size:8px;">HEAVY</span>':''}</td>
+      <td>${isNight||isHeavy?'<span class="badge badge-danger">YES</span>':'<span class="badge badge-success">NO</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ============================================================
+// LOCATION TRACKING ENGINE
+// ============================================================
+let locMap = null;
+let locMarkers = [];
+let locPolyline = null;
+
+const LOC_ICONS = {
+  home:    {emoji:'🏠', color:'#39ff14'},
+  work:    {emoji:'🏢', color:'#00d4ff'},
+  suspicious:{emoji:'🚨', color:'#ffaa00'},
+  crime:   {emoji:'☠️', color:'#ff3366'},
+  transit: {emoji:'🚌', color:'#aa00ff'},
+  unknown: {emoji:'❓', color:'#7aa8cc'},
+};
+
+function initLocationTab(){
+  if(!locMap){
+    locMap = L.map('locationMap').setView([28.6, 77.2], 10);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+      attribution:'CartoDB', maxZoom:18
+    }).addTo(locMap);
+  }
+  renderLocationMap();
+}
+
+function renderLocationMap(){
+  if(!locMap) return;
+
+  // Clear
+  locMarkers.forEach(m=>locMap.removeLayer(m));
+  locMarkers = [];
+  if(locPolyline){ locMap.removeLayer(locPolyline); locPolyline=null; }
+
+  const timeFilter = document.getElementById('locTimeFilter')?.value||'all';
+  const typeFilter = document.getElementById('locTypeFilter')?.value||'all';
+  const specDate  = document.getElementById('locSpecificDate')?.value||'';
+  const now = new Date();
+
+  // Filter records with location
+  let locData = processedData.filter(r=>{
+    if(!r.lat || !r.lon) return false;
+    if(typeFilter!=='all' && r.locationType!==typeFilter) return false;
+    if(!r.date) return false;
+    const diff=(now-r.date)/86400000;
+    if(timeFilter==='1d'&&diff>1) return false;
+    if(timeFilter==='7d'&&diff>7) return false;
+    if(timeFilter==='30d'&&diff>30) return false;
+    if(specDate){
+      const ds=r.date.toISOString().split('T')[0];
+      if(ds!==specDate) return false;
+    }
+    return true;
+  });
+
+  if(locData.length===0){
+    document.getElementById('locNotice').textContent='⚠️ Koi location data nahi mila. Latitude/Longitude columns select karo column mapper mein.';
+    return;
+  }
+
+  document.getElementById('locNotice').textContent=`✅ ${locData.length} location records plot ho rahe hain.`;
+
+  // Group by tower/location
+  const towers={};
+  locData.forEach(r=>{
+    const key=r.cellTower||(r.lat.toFixed(3)+'_'+r.lon.toFixed(3));
+    if(!towers[key]) towers[key]={
+      lat:r.lat, lon:r.lon, count:0,
+      name:r.locationName||key,
+      type:r.locationType||'unknown',
+      records:[], tower:r.cellTower,
+    };
+    towers[key].count++;
+    towers[key].records.push(r);
+  });
+
+  // Plot markers
+  Object.values(towers).forEach(t=>{
+    const info=LOC_ICONS[t.type]||LOC_ICONS.unknown;
+    const size=Math.min(50, 24+Math.log(t.count+1)*5);
+    const icon=L.divIcon({
+      html:`<div style="background:${info.color}22;border:2px solid ${info.color};width:${size}px;height:${size}px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:${size*0.45}px;box-shadow:0 0 12px ${info.color}88;cursor:pointer;" title="${t.name}">${info.emoji}</div>`,
+      className:'',iconSize:[size,size],iconAnchor:[size/2,size/2]
+    });
+
+    const dl=t.records.reduce((s,r)=>s+r.downloadBytes,0);
+    const ul=t.records.reduce((s,r)=>s+r.uploadBytes,0);
+    const apps=[...new Set(t.records.map(r=>detectSocialMedia?.(r)||'Other'))].join(', ');
+    const firstT=new Date(Math.min(...t.records.filter(r=>r.date).map(r=>r.date)));
+    const lastT=new Date(Math.max(...t.records.filter(r=>r.date).map(r=>r.date)));
+
+    const m=L.marker([t.lat,t.lon],{icon})
+      .bindPopup(`<div style="font-family:monospace;font-size:12px;min-width:220px;">
+        <b style="color:${info.color};font-size:14px;">${info.emoji} ${t.name}</b><br>
+        <hr style="margin:4px 0;border-color:#333">
+        <b>Type:</b> ${t.type.toUpperCase()}<br>
+        <b>Tower ID:</b> ${t.tower||'-'}<br>
+        <b>Sessions:</b> ${t.count}<br>
+        <b>Data:</b> DL ${formatBytes(dl)} | UL ${formatBytes(ul)}<br>
+        <b>Apps:</b> ${apps}<br>
+        <b>First Seen:</b> ${fmtDate(firstT)}<br>
+        <b>Last Seen:</b> ${fmtDate(lastT)}<br>
+        <b>Coords:</b> ${t.lat.toFixed(5)}, ${t.lon.toFixed(5)}
+      </div>`)
+      .addTo(locMap);
+    locMarkers.push(m);
+  });
+
+  // Stats
+  const hasLoc=processedData.filter(r=>r.lat&&r.lon);
+  const uniqueTowers=[...new Set(hasLoc.map(r=>r.cellTower||'').filter(Boolean))];
+  const suspLoc=hasLoc.filter(r=>r.locationType==='suspicious'||r.locationType==='crime');
+
+  document.getElementById('locationStats').innerHTML=`
+    <div class="stat-card blue"><div class="stat-icon">📍</div><div class="stat-value">${hasLoc.length}</div><div class="stat-label">Location Records</div></div>
+    <div class="stat-card orange"><div class="stat-icon">📡</div><div class="stat-value">${uniqueTowers.length}</div><div class="stat-label">Cell Towers</div></div>
+    <div class="stat-card green"><div class="stat-icon">🏠</div><div class="stat-value">${hasLoc.filter(r=>r.locationType==='home').length}</div><div class="stat-label">Home Sessions</div></div>
+    <div class="stat-card red"><div class="stat-icon">🚨</div><div class="stat-value">${suspLoc.length}</div><div class="stat-label">Suspicious+Crime</div></div>`;
+
+  // Charts
+  const dayLocCounts={};
+  const hourLocCounts=new Array(24).fill(0);
+  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  dayNames.forEach(d=>dayLocCounts[d]=0);
+  hasLoc.forEach(r=>{
+    if(!r.date) return;
+    dayLocCounts[dayNames[r.date.getDay()]]++;
+    hourLocCounts[r.date.getHours()]++;
+  });
+
+  destroyChart('locDayChart');
+  const ctx1=document.getElementById('locDayChart').getContext('2d');
+  charts.locDayChart=new Chart(ctx1,{type:'bar',data:{
+    labels:dayNames,
+    datasets:[{label:'Sessions',data:dayNames.map(d=>dayLocCounts[d]),
+      backgroundColor:'rgba(0,212,255,0.6)',borderColor:'#00d4ff',borderWidth:1,borderRadius:4}]
+  },options:{responsive:true,plugins:{legend:{display:false}},scales:{
+    x:{ticks:{color:'#7aa8cc'},grid:{color:'rgba(30,58,95,0.3)'}},
+    y:{ticks:{color:'#7aa8cc'},grid:{color:'rgba(30,58,95,0.3)'}}
+  }}});
+
+  destroyChart('locHourChart');
+  const ctx2=document.getElementById('locHourChart').getContext('2d');
+  charts.locHourChart=new Chart(ctx2,{type:'line',data:{
+    labels:Array.from({length:24},(_,i)=>pad(i)+':00'),
+    datasets:[{label:'Sessions',data:hourLocCounts,
+      borderColor:'#ff6b35',backgroundColor:'rgba(255,107,53,0.1)',fill:true,tension:0.4,pointRadius:2}]
+  },options:{responsive:true,plugins:{legend:{display:false}},scales:{
+    x:{ticks:{color:'#7aa8cc',font:{size:9},maxTicksLimit:12},grid:{color:'rgba(30,58,95,0.3)'}},
+    y:{ticks:{color:'#7aa8cc'},grid:{color:'rgba(30,58,95,0.3)'}}
+  }}});
+
+  // Intelligence
+  const intelDiv=document.getElementById('locIntelDiv');
+  const findings=[];
+
+  const crimeLoc=hasLoc.filter(r=>r.locationType==='crime');
+  if(crimeLoc.length>0){
+    const dates=[...new Set(crimeLoc.filter(r=>r.date).map(r=>r.date.toLocaleDateString('en-IN')))];
+    findings.push({
+      icon:'☠️',risk:'CRITICAL',
+      title:'CRIME SCENE LOCATION DETECTED',
+      detail:`Suspect ${crimeLoc.length} baar crime scene area mein tha. Dates: ${dates.join(', ')}. Locations: ${[...new Set(crimeLoc.map(r=>r.locationName))].join(' | ')}`,
+      action:'Crime ke waqt ka exact timestamp nikaalo aur eyewitness se match karo.'
+    });
+  }
+  const suspLocs2=hasLoc.filter(r=>r.locationType==='suspicious');
+  if(suspLocs2.length>0){
+    findings.push({
+      icon:'🚨',risk:'HIGH',
+      title:`SUSPICIOUS LOCATIONS — ${[...new Set(suspLocs2.map(r=>r.locationName))].join(', ')}`,
+      detail:`${suspLocs2.length} sessions suspicious jagah se hue. Yahan ka CCTV footage check karo.`,
+      action:'Local police station se CCTV requisition bhejo. Wahan ke log dhundho.'
+    });
+  }
+  const nightMoves=hasLoc.filter(r=>r.date&&(r.date.getHours()>=23||r.date.getHours()<5)&&r.locationType!=='home');
+  if(nightMoves.length>0){
+    findings.push({
+      icon:'🌙',risk:'HIGH',
+      title:`RAAT KO GHAR SE BAHAR — ${nightMoves.length} SESSIONS`,
+      detail:`Raat 11PM-5AM ke beech suspect ghar se alag jagah par tha. Dates: ${[...new Set(nightMoves.filter(r=>r.date).map(r=>r.date.toLocaleDateString('en-IN')))].join(', ')}`,
+      action:'In dates ki movement ka pura trail banao. Taxi/auto records check karo.'
+    });
+  }
+  if(uniqueTowers.length>1){
+    findings.push({
+      icon:'📡',risk:'MEDIUM',
+      title:`${uniqueTowers.length} CELL TOWERS SE CONNECT — MOVEMENT TRACKED`,
+      detail:`Suspect ne ${uniqueTowers.length} alag cell towers use kiye. Telecom se exact tower handoff records maango.`,
+      action:'Telecom company se CDR+tower data with handoff timestamps maango.'
+    });
+  }
+
+  intelDiv.innerHTML=findings.length?findings.map(f=>`
+    <div class="vpn-alert" style="border-left-color:${f.risk==='CRITICAL'?'#ff3366':f.risk==='HIGH'?'#ffaa00':'#00d4ff'};margin-bottom:10px;">
+      <div class="alert-icon">${f.icon}</div>
+      <div class="alert-body" style="flex:1;">
+        <div class="alert-title" style="color:${f.risk==='CRITICAL'?'#ff3366':f.risk==='HIGH'?'#ffaa00':'#00d4ff'}">${f.title}</div>
+        <div class="alert-detail" style="margin:6px 0;">${f.detail}</div>
+        <div style="font-size:11px;color:#39ff14;font-family:var(--font-mono);">▸ ACTION: ${f.action}</div>
+      </div>
+      <span class="badge ${f.risk==='CRITICAL'?'badge-danger':f.risk==='HIGH'?'badge-warning':'badge-info'}">${f.risk}</span>
+    </div>`).join(''):
+    '<div class="notice">✅ Koi suspicious location pattern nahi mila.</div>';
+
+  // Location Table
+  const tbody=document.getElementById('locTableBody');
+  tbody.innerHTML=locData.slice(0,200).map(r=>{
+    const info=LOC_ICONS[r.locationType]||LOC_ICONS.unknown;
+    const app=typeof detectSocialMedia==='function'?detectSocialMedia(r)||'-':'-';
+    return `<tr>
+      <td style="font-family:var(--font-mono);font-size:11px;">${r.rawTimestamp}</td>
+      <td>${info.emoji} <span style="color:${info.color};font-size:12px;">${r.locationName||'-'}</span></td>
+      <td style="font-family:var(--font-mono);font-size:11px;">${r.lat||'-'}</td>
+      <td style="font-family:var(--font-mono);font-size:11px;">${r.lon||'-'}</td>
+      <td style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);">${r.cellTower||'-'}</td>
+      <td><span class="badge ${r.locationType==='crime'?'badge-danger':r.locationType==='suspicious'?'badge-warning':'badge-info'}">${r.locationType}</span></td>
+      <td style="font-size:11px;">${app}</td>
+      <td style="font-family:var(--font-mono);font-size:11px;">${formatBytes(r.downloadBytes+r.uploadBytes)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function showMovementTrail(){
+  if(!locMap) return;
+  if(locPolyline){ locMap.removeLayer(locPolyline); locPolyline=null; return; }
+
+  const specDate=document.getElementById('locSpecificDate')?.value||'';
+  let data=processedData.filter(r=>r.lat&&r.lon&&r.date);
+  if(specDate) data=data.filter(r=>r.date.toISOString().split('T')[0]===specDate);
+  data.sort((a,b)=>a.date-b.date);
+
+  if(data.length<2){ alert('Trail ke liye specific date select karo aur kam se kam 2 points chahiye!'); return; }
+
+  const coords=data.map(r=>[r.lat,r.lon]);
+  locPolyline=L.polyline(coords,{color:'#ff3366',weight:3,opacity:0.8,dashArray:'8,4'}).addTo(locMap);
+  locMap.fitBounds(locPolyline.getBounds().pad(0.1));
+}
+
+function fitLocMap(){
+  if(!locMap||locMarkers.length===0) return;
+  const group=L.featureGroup(locMarkers);
+  locMap.fitBounds(group.getBounds().pad(0.1));
+}
+
+// ============================================================
+// HELPER FUNCTIONS
+// ============================================================
+function getTopIPs(n){
+  const ipCount = {};
+  processedData.forEach(r=>{ ipCount[r.destIP]=(ipCount[r.destIP]||0)+1; });
+  return Object.entries(ipCount).sort((a,b)=>b[1]-a[1]).slice(0,n);
+}
+
+function formatBytes(bytes){
+  if(!bytes||bytes===0) return '0 B';
+  const k=1024;
+  const sizes=['B','KB','MB','GB','TB'];
+  const i=Math.floor(Math.log(bytes)/Math.log(k));
+  return parseFloat((bytes/Math.pow(k,i)).toFixed(1))+' '+sizes[i];
+}
+
+function heatColor(intensity){
+  if(intensity===0) return 'rgba(13,20,32,0.5)';
+  const r = Math.round(255*Math.min(1,intensity*2));
+  const g = Math.round(255*Math.max(0,1-intensity*2));
+  const b = intensity>0.5?0:Math.round(100*(1-intensity*2));
+  return `rgba(${r},${g},${b},0.8)`;
+}
+
+function portLabel(port){
+  const services={80:'HTTP',443:'HTTPS',21:'FTP',22:'SSH',25:'SMTP',53:'DNS',3389:'RDP',8080:'Proxy'};
+  if(VPN_PORTS[parseInt(port)]) return port+'('+VPN_PORTS[parseInt(port)].name+')';
+  return port+(services[parseInt(port)]?' ('+services[parseInt(port)]+')':'');
+}
+
+function pad(n){ return String(n).padStart(2,'0'); }
+
+function fmtDate(d){
+  if(!d) return '-';
+  return d.toLocaleDateString('en-IN')+' '+d.toLocaleTimeString('en-IN');
+}
+
+function getWeekNumber(d){
+  const onejan = new Date(d.getFullYear(),0,1);
+  return Math.ceil((((d - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+}
+
+function showLoading(msg){
+  document.getElementById('loadingText').textContent = msg||'PROCESSING...';
+  document.getElementById('loadingOverlay').classList.add('show');
+}
+
+function hideLoading(){
+  document.getElementById('loadingOverlay').classList.remove('show');
+}
+
+function destroyChart(id){
+  if(charts[id]){ charts[id].destroy(); delete charts[id]; }
+}
+
+// Map time filter toggle
+document.getElementById('mapTimeFilter')?.addEventListener('change', function(){
+  const custom = this.value === 'custom';
+  document.getElementById('mapDateFrom').style.display = custom?'block':'none';
+  document.getElementById('mapDateTo').style.display = custom?'block':'none';
+});
+
+// Demo data loader for testing
+function loadDemoData(){
+  const demo = [];
+  const now = Date.now();
+  const ips = ['8.8.8.8','142.250.195.46','1.1.1.1','172.217.14.206','31.13.72.36','193.0.14.129','202.12.27.33','66.220.149.89','108.177.122.94','192.168.1.1','103.21.244.0','185.220.101.45','37.0.8.102'];
+  const ports = [80,443,22,8080,1194,9050,3128,1723,443,80,4500,443,80];
+  
+  for(let i=0; i<200; i++){
+    const ipIdx = Math.floor(Math.random()*ips.length);
+    const daysAgo = Math.random()*30;
+    const date = new Date(now - daysAgo*86400000);
+    demo.push({
+      'Timestamp': date.toISOString(),
+      'Destination_IP': ips[ipIdx],
+      'Destination_Port': ports[Math.floor(Math.random()*ports.length)],
+      'Source_IP': '192.168.1.'+Math.floor(Math.random()*255),
+      'Protocol': Math.random()>0.3?'TCP':'UDP',
+      'Download_Bytes': Math.floor(Math.random()*10000000),
+      'Upload_Bytes': Math.floor(Math.random()*1000000),
+      'MSISDN': '91'+Math.floor(7000000000+Math.random()*2999999999),
+      'IMEI': Math.floor(100000000000000+Math.random()*899999999999999)
+    });
+  }
+
+  rawData = demo;
+  columns = Object.keys(demo[0]);
+  showColumnMapper();
+}
+
+</script>
+
+<!-- Demo button in upload zone -->
+<script>
+document.addEventListener('DOMContentLoaded', ()=>{
+  const uploadZone = document.getElementById('uploadZone');
+  const demoBtn = document.createElement('div');
+  demoBtn.style.marginTop = '16px';
+  demoBtn.innerHTML = '<button class="btn btn-warning" type="button" onclick="loadDemoData()">🧪 DEMO DATA LOAD KARO (Testing)</button>';
+  uploadZone.appendChild(demoBtn);
+});
+</script>
+
+</body>
+</html>

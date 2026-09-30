@@ -1,0 +1,139 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║     🔍 MULTIPLE IPDR CONNECTION ANALYSIS - SIMPLE EXPLANATION           ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📂 INPUT: Multiple IPDR Files
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   File 1: suspect_A_ipdr.csv
+   File 2: suspect_B_ipdr.csv
+   File 3: suspect_C_ipdr.csv
+   
+   ⬇️ Combine karte hain ⬇️
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔎 STEP 1: SHARED IP ANALYSIS (40% weightage)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   Question: Kya suspects same websites/servers access kar rahe hain?
+
+   Example:
+   ┌─────────────────────────────────────────────────────────────┐
+   │  IP Address      │  Used By                │  Risk Level    │
+   ├──────────────────┼─────────────────────────┼────────────────┤
+   │  45.67.89.100   │  Suspect A, B, C        │  🔴 CRITICAL  │
+   │  123.45.67.89   │  Suspect A, B           │  🟠 HIGH      │
+   │  8.8.8.8        │  Suspect B, C           │  🟡 MEDIUM    │
+   └─────────────────────────────────────────────────────────────┘
+
+   ✅ Same IP = Same server = Gang connection!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⏰ STEP 2: TIME SYNCHRONIZATION (30% weightage)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   Question: Kya suspects same time pe online hote hain?
+
+   Example (15-minute windows):
+   ┌─────────────────────────────────────────────────────────────┐
+   │  Time Window         │  Suspects Active                     │
+   ├──────────────────────┼──────────────────────────────────────┤
+   │  14:15 - 14:30 IST  │  Suspect A, Suspect B, Suspect C    │
+   │  18:00 - 18:15 IST  │  Suspect A, Suspect C               │
+   │  22:45 - 23:00 IST  │  Suspect B, Suspect C               │
+   └─────────────────────────────────────────────────────────────┘
+
+   ✅ Same timing = Coordinated activity = Planning kar rahe hain!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔧 STEP 3: SHARED INFRASTRUCTURE (30% weightage)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   Question: Kya suspects same tools/ports/ISPs use kar rahe hain?
+
+   Example:
+   ┌─────────────────────────────────────────────────────────────┐
+   │  Infrastructure     │  Details                │  Suspects   │
+   ├─────────────────────┼─────────────────────────┼─────────────┤
+   │  Port 9050 (Tor)    │  Dark web access        │  A, B, C    │
+   │  Port 1194 (VPN)    │  Privacy tool           │  A, B       │
+   │  Port 4444          │  Hacking tool           │  B, C       │
+   │  Same ISP           │  Same provider          │  A, C       │
+   └─────────────────────────────────────────────────────────────┘
+
+   ✅ Same ports/tools = Same criminal methods!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎲 FINAL CALCULATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   Formula:
+   Gang Score = (IP_Score × 40%) + (Sync_Score × 30%) + (Infra_Score × 30%)
+
+   Example Calculation:
+   
+   IP Score:    30 points  (2 shared IPs × 15)
+   Sync Score:  15 points  (3 time windows × 5)
+   Infra Score: 70 points  (5 servers × 10 + 4 ports × 5)
+   
+   Final = (30 × 0.4) + (15 × 0.3) + (70 × 0.3)
+        = 12 + 4.5 + 21
+        = 37.5
+        ≈ 38/100
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 VERDICT CATEGORIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   🟢 ISOLATED INCIDENTS (0-30)
+      ➜ Independent activities
+      ➜ No gang connection
+      ➜ Coincidence possible
+
+   🟠 POSSIBLY LINKED (31-65)
+      ➜ Some patterns match
+      ➜ Weak connection
+      ➜ Further investigation needed
+
+   🔴 ORGANIZED SYNDICATE (66-100)
+      ➜ Strong gang evidence
+      ➜ Coordinated criminal activity
+      ➜ Immediate action required!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 OUTPUT: Evidence Report
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   ✓ IP 45.67.89.100 contacted by 3 suspects - same server
+   
+   ✓ 3 time windows with simultaneous activity - coordination
+   
+   ✓ 5 servers shared across suspects - common infrastructure
+   
+   ✓ Port 9050 (Tor) used by all - same criminal tools
+   
+   ✓ Gang Score: 38/100 → POSSIBLY LINKED
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 KEY TAKEAWAY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   Multiple IPDR Connection Analysis automatically identifies:
+   
+   ✅ If suspects are working together
+   ✅ How strong the connection is (0-100 score)
+   ✅ What evidence supports the connection
+   ✅ Plain-English explanation for officers
+   
+   Result: Clear answer to "Are they a gang?" question!
+
+╚══════════════════════════════════════════════════════════════════════════╝

@@ -177,12 +177,6 @@ python generate_realistic_ipdr.py
 
 ---
 
-## 📸 Screenshots
-
-> IPDR Dashboard • Network Graph • Geo Map • AI Analysis
-
-*Dark neon theme with real-time analysis panels*
-
 ---
 
 ## 👨‍💻 Author

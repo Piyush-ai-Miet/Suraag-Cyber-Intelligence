@@ -2567,7 +2567,9 @@ elif page == "🌐 IPDR Analysis Tool":
     """, unsafe_allow_html=True)
     
     base_dir = os.path.abspath(os.path.dirname(__file__))
-    ipdr_path = os.path.join(base_dir, "cdr-and-ipdr", "IPDR_Analysis_Tool_v5.html")
+    ipdr_path = os.path.join(base_dir, "IPDR_Analysis_Tool_v5.html")
+    if not os.path.exists(ipdr_path):
+        ipdr_path = os.path.join(base_dir, "cdr-and-ipdr", "IPDR_Analysis_Tool_v5.html")
     
     if os.path.exists(ipdr_path):
         with open(ipdr_path, 'r', encoding='utf-8') as f:
@@ -2605,7 +2607,9 @@ elif page == "📱 CDR Analysis Tool":
     """, unsafe_allow_html=True)
     
     base_dir = os.path.abspath(os.path.dirname(__file__))
-    cdr_path = os.path.join(base_dir, "cdr-and-ipdr", "CDR_Analysis_Tool_v2.html")
+    cdr_path = os.path.join(base_dir, "CDR_Analysis_Tool_v2.html")
+    if not os.path.exists(cdr_path):
+        cdr_path = os.path.join(base_dir, "cdr-and-ipdr", "CDR_Analysis_Tool_v2.html")
     
     if os.path.exists(cdr_path):
         with open(cdr_path, 'r', encoding='utf-8') as f:
